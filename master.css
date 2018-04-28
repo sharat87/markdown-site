@@ -60,9 +60,14 @@ pre {
     overflow-x: auto;
 }
 
-p code {
+code {
     padding: 0 3px;
     background-color: rgba(0, 0, 0, .03);
+}
+
+pre code {
+    padding: 0;
+    background-color: transparent;
 }
 
 table {
