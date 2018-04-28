@@ -1,0 +1,139 @@
+* {
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    margin: 0 auto;
+    max-width: 960px;
+    min-height: 100%;
+    padding: 1em 1em 6em;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, .1);
+    border-width: 0 1px;
+}
+
+input, button, select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+hr {
+    border-width: 0 0 1px 0;
+}
+
+.show {
+    display: inherit;
+}
+
+.hide, #finder a.hide {
+    display: none;
+}
+
+#loadingBox {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 0 0 3px 3px;
+    background-color: maroon;
+    color: beige;
+    font-size: 1.2em;
+    padding: 3px 2em;
+}
+
+article > h1:first-child {
+    margin-top: 0;
+    font-size: 2em;
+}
+
+pre {
+    padding: 3px;
+    margin-left: 2em;
+    background-color: rgba(0, 0, 0, .02);
+    overflow-x: auto;
+}
+
+p code {
+    padding: 0 3px;
+    background-color: rgba(0, 0, 0, .03);
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table thead, tr:hover {
+    background-color: rgba(0, 0, 0, .05);
+}
+
+th, td {
+    border: thin solid rgba(0, 0, 0, .15);
+    padding: 3px 6px;
+}
+
+th {
+    text-align: left;
+}
+
+#finder {
+    position: fixed;
+    top: 0;
+    right: 0;
+    background-color: aliceblue;
+    color: darkblue;
+    box-shadow: 0 0 12px rgba(0, 0, 0, .2);
+    border-radius: 0 0 0 1em;
+    border-width: 0 0 3px 3px;
+    border-style: solid;
+    border-color: cornflowerblue;
+    padding: 6px;
+    min-width: 30%;
+    height: 50%;
+    min-height: 300px;
+    overflow-y: auto;
+}
+
+#finder input {
+    border-width: 0 0 1px 0;
+    border-color: black;
+    background: transparent;
+    width: 100%;
+    margin-bottom: 1em;
+}
+
+#finder a {
+    padding: 3px 6px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    border-radius: 2px;
+}
+
+#finder .active, #finder a:hover {
+    background-color: cornflowerblue;
+    color: aliceblue;
+}
+
+#finder a .hl {
+    text-decoration: underline;
+    color: yellow;
+}
+
+.evaluated {
+    border-top: 3px solid orange;
+}
+
+.evaluated:before {
+    content: 'evaluated';
+    background-color: orange;
+    color: white;
+    display: block;
+    margin-top: -6px;
+}
