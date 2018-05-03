@@ -54,14 +54,31 @@ class Compiler {
     }
 
     static render_paragraph(text) {
-        const tpl = document.createElement('template');
-        tpl.innerHTML = text;
-        const fragment = tpl.content;
-        for (const node of fragment.childNodes) {
+        const para = document.createElement('p');
+        para.innerHTML = text;
+
+        for (const node of para.childNodes) {
+            let content = node.textContent;
             if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE')
-                node.textContent = Compiler.symbolize(node.textContent);
+                content = Compiler.symbolize(content);
+
+            const match = content.match(/^{(.+?)}\s*/);
+
+            if (match) {
+                content = content.substr(match[0].length);
+                const attrs = match[1].split(/\s+/);
+                for (const attr of attrs) {
+                    if (attr.startsWith('.'))
+                        para.classList.add(attr.substr(1));
+                    else if (attr.startsWith('#'))
+                        para.setAttribute('id', attr.substr(1));
+                }
+            }
+
+            node.textContent = content;
         }
-        return marked.Renderer.prototype.paragraph(tpl.innerHTML);
+
+        return marked.Renderer.prototype.paragraph(para.outerHTML);
         // return paragraph_original(this.symbolize(text));
     }
 

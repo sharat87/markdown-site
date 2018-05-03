@@ -126,9 +126,8 @@ th {
     color: aliceblue;
 }
 
-#finder a .hl {
+#finder .hl {
     text-decoration: underline;
-    color: yellow;
 }
 
 .evaluated {
