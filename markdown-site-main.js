@@ -128,6 +128,10 @@ class Finder {
                 this.applyFilter();
             }
 
+            if (event.key === 'r') {
+                onHashChange();
+            }
+
             return;
         }
 
