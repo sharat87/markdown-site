@@ -32,6 +32,8 @@ for (const script of document.querySelectorAll('script[src]')) {
     }
 }
 
+const ORIGINAL_TITLE = document.title;
+
 const mainEl = document.getElementById('main');
 const loadingEl = document.getElementById('loadingBox');
 
@@ -223,9 +225,9 @@ function render(url, el, cb) {
         el.innerHTML = compiler.compile(text);
 
         if (el.firstElementChild.tagName === 'H1')
-            document.title = el.firstElementChild.innerText + ' - Markdown Site';
+            document.title = el.firstElementChild.innerText + ' - ' + ORIGINAL_TITLE;
         else
-            document.title = 'Markdown Site';
+            document.title = ORIGINAL_TITLE;
 
         for (const e of el.getElementsByTagName('a'))
             if (e.href.endsWith('.md'))
