@@ -52,12 +52,13 @@ class Compiler {
 
     makeRenderer() {
         this.renderer = new marked.Renderer();
-        this.renderer.paragraph = Compiler.render_paragraph;
+        this.renderer.paragraph = Compiler.renderParagraph;
+        this.renderer.listitem = Compiler.renderListItem;
     }
 
-    static render_paragraph(text) {
+    static renderParagraph(html) {
         const para = document.createElement('p');
-        para.innerHTML = text;
+        para.innerHTML = html;
 
         for (const node of para.childNodes) {
             let content = node.textContent;
@@ -80,8 +81,20 @@ class Compiler {
             node.textContent = content;
         }
 
-        return marked.Renderer.prototype.paragraph(para.outerHTML);
-        // return paragraph_original(this.symbolize(text));
+        return para.outerHTML;
+    }
+
+    static renderListItem(html) {
+        const li = document.createElement('li');
+
+        const match = html.match(/^!+\s*/);
+        if (match) {
+            html = html.substr(match[0].length);
+            li.classList.add('highlight-' + match[0].trim().length);
+        }
+
+        li.innerHTML = html;
+        return li.outerHTML;
     }
 
     static symbolize(text) {

@@ -141,3 +141,17 @@ th {
     display: block;
     margin-top: -6px;
 }
+
+li.highlight-1 {
+    background-color: lemonchiffon;
+}
+
+li.highlight-2 {
+    background-color: yellow;
+    color: darkgoldenrod;
+}
+
+li.highlight-3 {
+    background-color: maroon;
+    color: antiquewhite;
+}
