@@ -81,20 +81,23 @@ class Compiler {
             node.textContent = content;
         }
 
+        Compiler.applyPriority(para);
         return para.outerHTML;
     }
 
     static renderListItem(html) {
         const li = document.createElement('li');
-
-        const match = html.match(/^!+\s*/);
-        if (match) {
-            html = html.substr(match[0].length);
-            li.classList.add('highlight-' + match[0].trim().length);
-        }
-
         li.innerHTML = html;
+        Compiler.applyPriority(li);
         return li.outerHTML;
+    }
+
+    static applyPriority(el) {
+        const match = el.innerHTML.match(/^!+\s*/);
+        if (match) {
+            el.innerHTML = el.innerHTML.substr(match[0].length);
+            el.classList.add('highlight-' + match[0].trim().length);
+        }
     }
 
     static symbolize(text) {
