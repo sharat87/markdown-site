@@ -165,3 +165,9 @@ th {
 h1 + .author-msg {
     margin-top: -2em;
 }
+
+@media print {
+    body {
+        border: none;
+    }
+}
