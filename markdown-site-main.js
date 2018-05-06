@@ -64,15 +64,27 @@ class Compiler {
             this.makeRenderer();
         return window.marked(raw, {
             smartypants: true,
-            highlight: (code) => window.hljs.highlightAuto(code).value,
             renderer: this.renderer,
         });
     }
 
     makeRenderer() {
         this.renderer = new marked.Renderer();
+        this.renderer.code = Compiler.renderCode;
         this.renderer.paragraph = Compiler.renderParagraph;
         this.renderer.listitem = Compiler.renderListItem;
+    }
+
+    static renderCode(text, lang) {
+        const pre = document.createElement('pre');
+        pre.innerHTML = '<code></code>';
+        if (lang && window.hljs.listLanguages().indexOf(lang) >= 0) {
+            pre.firstElementChild.classList.add(this.options.langPrefix + lang);
+            pre.firstElementChild.innerHTML = window.hljs.highlight(lang, text).value;
+        } else {
+            pre.firstElementChild.innerText = text;
+        }
+        return pre.outerHTML;
     }
 
     static renderParagraph(html) {
@@ -290,7 +302,7 @@ function evalEmbedded(parent) {
         const config = JSON.parse(match[1]);
         if (config.eval) {
             const fn = new Function(codeEl.innerText);
-            fn.call(codeEl);
+            fn.call({preEl: codeEl.parentElement, codeEl});
             codeEl.parentElement.classList.add('evaluated');
         }
     }
