@@ -281,6 +281,15 @@ function render(url, el, cb) {
         else
             document.title = ORIGINAL_TITLE;
 
+        const authorEl = document.querySelector('meta[name="author"]');
+        if (authorEl) {
+            const content = '<p class="author-msg">Written by ' + authorEl.content + '.</p>';
+            if (el.firstElementChild.tagName === 'H1')
+                el.firstElementChild.insertAdjacentHTML('afterend', content);
+            else
+                el.firstElementChild.insertAdjacentHTML('beforebegin', content);
+        }
+
         for (const e of el.getElementsByTagName('a'))
             if (e.href.endsWith('.md'))
                 e.setAttribute('href', '#' + e.getAttribute('href'));
