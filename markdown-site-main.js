@@ -275,20 +275,15 @@ function onHashChange(event) {
 function render(url, el, cb) {
     fetchText(url).then((text) => {
         el.innerHTML = compiler.compile(text);
+        const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
-        if (el.firstElementChild.tagName === 'H1')
-            document.title = el.firstElementChild.innerText + ' - ' + ORIGINAL_TITLE;
-        else
-            document.title = ORIGINAL_TITLE;
+        document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
 
         const authorEl = document.querySelector('meta[name="author"]');
-        if (authorEl) {
-            const content = '<p class="author-msg">Written by ' + authorEl.content + '.</p>';
-            if (el.firstElementChild.tagName === 'H1')
-                el.firstElementChild.insertAdjacentHTML('afterend', content);
-            else
-                el.firstElementChild.insertAdjacentHTML('beforebegin', content);
-        }
+        if (authorEl)
+            el.firstElementChild.insertAdjacentHTML(
+                hasTitleH1 ? 'afterend' : 'beforebegin',
+                '<p class="author-msg">Written by ' + authorEl.content + '.</p>');
 
         for (const e of el.getElementsByTagName('a'))
             if (e.href.endsWith('.md'))
