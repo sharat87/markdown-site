@@ -1,11 +1,31 @@
 const scripts = [
-    'https://unpkg.com/marked/marked.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js',
+    {src: 'https://unpkg.com/marked/marked.min.js'},
+    {src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'},
+    {
+        text: 'MathJax.Hub.Config(' + JSON.stringify({
+            tex2jax: {
+                inlineMath: [['${', '}']],
+                displayMath: [['\\[', '\\]']],
+            },
+            jax: ['input/TeX', 'output/CommonHTML'],
+            extensions: ['tex2jax.js', 'MathMenu.js', 'MathZoom.js', 'AssistiveMML.js', 'a11y/accessibility-menu.js'],
+            TeX: {extensions: ['AMSmath.js', 'AMSsymbols.js', 'noErrors.js', 'noUndefined.js']},
+            displayAlign: 'left',
+            displayIndent: '2em',
+        }) + ')',
+        type: 'text/x-mathjax-config',
+    },
+    {src: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js'},
 ];
 
 for (const script of scripts) {
     const el = document.createElement('script');
-    el.src = script;
+    el.type = script.type || 'text/javascript';
+    if (script.src)
+        el.src = script.src;
+    if (script.text)
+        el.text = script.text;
+    el.setAttribute('async', 'async');
     document.head.appendChild(el);
 }
 
@@ -21,13 +41,12 @@ document.body.insertAdjacentHTML('afterbegin', `
 `);
 
 for (const script of document.querySelectorAll('script[src]')) {
-    let src = script.getAttribute('src');
+    const src = script.getAttribute('src');
     if (src.endsWith('markdown-site-main.js')) {
-        src = src.replace('markdown-site-main.js', 'master.css');
         const link = document.createElement('link');
         link.setAttribute('rel', 'stylesheet');
-        link.setAttribute('href', src);
-        document.head.insertAdjacentElement('beforeend', link);
+        link.setAttribute('href', src.replace('markdown-site-main.js', 'master.css'));
+        document.head.appendChild(link);
         break;
     }
 }
@@ -65,7 +84,7 @@ class Compiler {
             if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE')
                 content = Compiler.symbolize(content);
 
-            const match = content.match(/^{(.+?)}\s*/);
+            const match = content.match(/^{([-.a-z]+?)}\s*/);
 
             if (match) {
                 content = content.substr(match[0].length);
@@ -214,7 +233,7 @@ class Finder {
 const compiler = new Compiler();
 
 function main() {
-    if (!(window.marked && window.hljs))
+    if (!(window.marked && window.hljs && window.MathJax))
         return;
     clearInterval(mainInterval);
     window.addEventListener('hashchange', onHashChange);
@@ -232,6 +251,7 @@ function onHashChange(event) {
 
     let count = 1;
     render(page, mainEl, onDone);
+
     // TODO: Add sidebar and nav-bar.
 
     function onDone() {
@@ -253,7 +273,10 @@ function render(url, el, cb) {
             if (e.href.endsWith('.md'))
                 e.setAttribute('href', '#' + e.getAttribute('href'));
 
-        setTimeout(() => evalEmbedded(el));
+        setTimeout(() => {
+            evalEmbedded(el);
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+        });
 
         cb && cb();
     });
