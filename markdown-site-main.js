@@ -296,19 +296,15 @@ function onHashChange(event) {
     if (!page || page.endsWith('/'))
         page += 'index.md';
 
-    let count = 1;
-    render(page, mainEl, onDone);
+    Promise.all([
+        render(page, mainEl),
+       // TODO: Add sidebar and nav-bar.
+    ]).finally(() => loadingEl.classList.add('hide'));
 
-    // TODO: Add sidebar and nav-bar.
-
-    function onDone() {
-        if (!--count)
-            loadingEl.classList.add('hide');
-    }
 }
 
-function render(url, el, cb) {
-    fetch(url, {cache: 'no-cache'})
+function render(url, el) {
+    return fetch(url, {cache: 'no-cache'})
         .then((response) => {
             return response.ok ? response.text() : Promise.reject(response);
         })
@@ -335,13 +331,13 @@ function render(url, el, cb) {
                 mermaid.init();
             });
 
-            cb && cb();
+            return Promise.resolve();
         })
         .catch((response) => {
             console.error('Error fetching document.', response);
             el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
                 response.statusText + '</h1>';
-            cb && cb();
+            return Promise.reject();
         });
 }
 
