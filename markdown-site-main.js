@@ -308,31 +308,41 @@ function onHashChange(event) {
 }
 
 function render(url, el, cb) {
-    fetchText(url).then((text) => {
-        const {frontMatter, html} = compiler.compile(text);
-        el.innerHTML = html;
-        const hasTitleH1 = el.firstElementChild.tagName === 'H1';
+    fetch(url, {cache: 'no-cache'})
+        .then((response) => {
+            return response.ok ? response.text() : Promise.reject(response);
+        })
+        .then((text) => {
+            const {frontMatter, html} = compiler.compile(text);
+            el.innerHTML = html;
+            const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
-        document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
+            document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
 
-        const authorEl = document.querySelector('meta[name="author"]');
-        if (authorEl)
-            el.firstElementChild.insertAdjacentHTML(
-                hasTitleH1 ? 'afterend' : 'beforebegin',
-                '<p class="author-msg">Written by ' + authorEl.content + '.</p>');
+            const authorEl = document.querySelector('meta[name="author"]');
+            if (authorEl)
+                el.firstElementChild.insertAdjacentHTML(
+                    hasTitleH1 ? 'afterend' : 'beforebegin',
+                    '<p class="author-msg">Written by ' + authorEl.content + '.</p>');
 
-        for (const e of el.getElementsByTagName('a'))
-            if (e.href.endsWith('.md'))
-                e.setAttribute('href', '#' + e.getAttribute('href'));
+            for (const e of el.getElementsByTagName('a'))
+                if (e.href.endsWith('.md'))
+                    e.setAttribute('href', '#' + e.getAttribute('href'));
 
-        setTimeout(() => {
-            evalEmbedded(el, frontMatter);
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
-            mermaid.init();
+            setTimeout(() => {
+                evalEmbedded(el, frontMatter);
+                MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+                mermaid.init();
+            });
+
+            cb && cb();
+        })
+        .catch((response) => {
+            console.error('Error fetching document.', response);
+            el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
+                response.statusText + '</h1>';
+            cb && cb();
         });
-
-        cb && cb();
-    });
 }
 
 function evalEmbedded(parent, frontMatter) {
