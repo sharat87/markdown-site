@@ -1,63 +1,29 @@
-const scripts = [
-    {src: 'https://unpkg.com/marked/marked.min.js'},
-    {src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'},
-    {src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js'},
-    {
-        text: 'MathJax.Hub.Config(' + JSON.stringify({
-            tex2jax: {
-                inlineMath: [['${', '}']],
-                displayMath: [['\\[', '\\]'], ['[[[[[', ']]]]]']],
-            },
-            jax: ['input/TeX', 'output/CommonHTML'],
-            extensions: ['tex2jax.js', 'MathMenu.js', 'MathZoom.js', 'AssistiveMML.js', 'a11y/accessibility-menu.js'],
-            TeX: {extensions: ['AMSmath.js', 'AMSsymbols.js', 'noErrors.js', 'noUndefined.js']},
-            displayAlign: 'left',
-            displayIndent: '2em',
-        }) + ')',
-        type: 'text/x-mathjax-config',
-    },
-    {src: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js'},
-];
-
-for (const script of scripts) {
-    const el = document.createElement('script');
-    el.type = script.type || 'text/javascript';
-    if (script.src)
-        el.src = script.src;
-    if (script.text)
-        el.text = script.text;
-    el.setAttribute('async', 'async');
-    document.head.appendChild(el);
-}
-
-document.body.insertAdjacentHTML('afterbegin', `
-    <article id=main></article>
-    <div id="finder" class="hide">
-        <input type="search" placeholder="Type to filter&hellip;">
-        <div class="listing"></div>
-    </div>
-    <div id="loadingBox">Loading&hellip;</div>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-`);
-
-for (const script of document.querySelectorAll('script[src]')) {
-    const src = script.getAttribute('src');
-    if (src.endsWith('markdown-site-main.js')) {
-        const link = document.createElement('link');
-        link.setAttribute('rel', 'stylesheet');
-        link.setAttribute('href', src.replace('markdown-site-main.js', 'master.css'));
-        document.head.appendChild(link);
-        break;
-    }
-}
-
 const ORIGINAL_TITLE = document.title;
 
-const mainEl = document.getElementById('main');
-const loadingEl = document.getElementById('loadingBox');
+const MATH_JAX_CONFIG = {
+    tex2jax: {
+        inlineMath: [['${', '}']],
+        displayMath: [['\\[', '\\]'], ['[[[[[', ']]]]]']],
+    },
+    jax: ['input/TeX', 'output/CommonHTML'],
+    extensions: ['tex2jax.js', 'MathMenu.js', 'MathZoom.js', 'AssistiveMML.js', 'a11y/accessibility-menu.js'],
+    TeX: {extensions: ['AMSmath.js', 'AMSsymbols.js', 'noErrors.js', 'noUndefined.js']},
+    displayAlign: 'left',
+    displayIndent: '2em',
+};
 
-const mainInterval = setInterval(main, 200);
+// Add MathJax config to the page.
+const el = document.createElement('script');
+el.type = 'text/x-mathjax-config';
+el.text = 'MathJax.Hub.Config(' + JSON.stringify(MATH_JAX_CONFIG) + ')';
+document.head.appendChild(el);
+
+// Load library scripts needed.
+script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js')
+    .then(() => script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js'))
+    .then(main);
+script('https://unpkg.com/marked/marked.min.js');
+script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
 
 class Compiler {
     compile(raw) {
@@ -266,15 +232,47 @@ class Finder {
     }
 }
 
+document.body.insertAdjacentHTML('afterbegin', `
+    <article id=main></article>
+    <div id="finder" class="hide">
+        <input type="search" placeholder="Type to filter&hellip;">
+        <div class="listing"></div>
+    </div>
+    <div id="loadingBox">Loading&hellip;</div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+`);
+
+for (const script of document.querySelectorAll('script[src]')) {
+    const src = script.getAttribute('src');
+    if (src.endsWith('markdown-site-main.js')) {
+        const link = document.createElement('link');
+        link.setAttribute('rel', 'stylesheet');
+        link.setAttribute('href', src.replace('markdown-site-main.js', 'master.css'));
+        document.head.appendChild(link);
+        break;
+    }
+}
+
+const mainEl = document.getElementById('main');
+const loadingEl = document.getElementById('loadingBox');
 const compiler = new Compiler();
 
 function main() {
-    if (!(window.marked && window.hljs && window.MathJax))
-        return;
-    clearInterval(mainInterval);
     window.addEventListener('hashchange', onHashChange);
     onHashChange();
     new Finder(document.getElementById('finder')).load('pages.txt');
+}
+
+function script(url) {
+    const el = document.createElement('script');
+    el.setAttribute('async', 'async');
+    el.src = url;
+    document.head.appendChild(el);
+
+    return new Promise((resolve, reject) => {
+        el.onload = () => resolve();
+    });
 }
 
 function onHashChange(event) {
