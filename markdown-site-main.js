@@ -298,7 +298,7 @@ function onHashChange(event) {
 
     Promise.all([
         render(page, mainEl),
-       // TODO: Add sidebar and nav-bar.
+        // TODO: Add sidebar and nav-bar.
     ]).finally(() => loadingEl.classList.add('hide'));
 
 }
@@ -306,14 +306,26 @@ function onHashChange(event) {
 function render(url, el) {
     return fetch(url, {cache: 'no-cache'})
         .then((response) => {
-            return response.ok ? response.text() : Promise.reject(response);
+            if (response.ok) {
+                return Promise.all([
+                    response.text(),
+                    Promise.resolve(response.headers),
+                ]);
+            } else {
+                return Promise.reject(response);
+            }
         })
-        .then((text) => {
+        .then(([text, headers]) => {
             const {frontMatter, html} = compiler.compile(text);
             el.innerHTML = html;
             const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
             document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
+
+            const lastModified = headers.get('last-modified');
+            el.firstElementChild.insertAdjacentHTML(
+                hasTitleH1 ? 'afterend' : 'beforebegin',
+                '<p class="last-mod-msg">Last modified: ' + lastModified + '.</p>');
 
             const authorEl = document.querySelector('meta[name="author"]');
             if (authorEl)

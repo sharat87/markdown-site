@@ -156,10 +156,11 @@ th {
     color: antiquewhite;
 }
 
-.author-msg {
+.author-msg, .last-mod-msg {
     font-style: italic;
     font-size: .8em;
     opacity: .7;
+    margin: 0;
 }
 
 h1 + .author-msg {
