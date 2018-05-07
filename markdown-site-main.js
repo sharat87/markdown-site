@@ -177,16 +177,18 @@ class Finder {
 
     onKeyDown(event) {
         if (event.target !== this.searchInput) {
-            if (event.key === 'f') {
-                event.preventDefault();
-                this.el.classList.remove('hide');
-                this.searchInput.focus();
-                this.searchInput.value = '';
-                this.applyFilter();
-            }
+            if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+                if (event.key === 'f') {
+                    event.preventDefault();
+                    this.el.classList.remove('hide');
+                    this.searchInput.focus();
+                    this.searchInput.value = '';
+                    this.applyFilter();
+                }
 
-            if (event.key === 'r') {
-                onHashChange();
+                if (event.key === 'r') {
+                    onHashChange();
+                }
             }
 
             return;
