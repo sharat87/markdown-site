@@ -63,10 +63,21 @@ class Compiler {
     compile(raw) {
         if (!this.renderer)
             this.makeRenderer();
-        return window.marked(raw, {
-            smartypants: true,
-            renderer: this.renderer,
-        });
+
+        let frontMatter = null;
+        if (raw.startsWith('{\n')) {
+            const endIndex = raw.indexOf('\n}\n');
+            frontMatter = JSON.parse(raw.substr(0, endIndex + 2));
+            raw = raw.substr(endIndex + 3);
+        }
+
+        return {
+            frontMatter,
+            html: window.marked(raw, {
+                smartypants: true,
+                renderer: this.renderer,
+            }),
+        };
     }
 
     makeRenderer() {
@@ -287,7 +298,8 @@ function onHashChange(event) {
 
 function render(url, el, cb) {
     fetchText(url).then((text) => {
-        el.innerHTML = compiler.compile(text);
+        const {frontMatter, html} = compiler.compile(text);
+        el.innerHTML = html;
         const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
         document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
@@ -303,7 +315,7 @@ function render(url, el, cb) {
                 e.setAttribute('href', '#' + e.getAttribute('href'));
 
         setTimeout(() => {
-            evalEmbedded(el);
+            evalEmbedded(el, frontMatter);
             MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
         });
 
@@ -311,7 +323,7 @@ function render(url, el, cb) {
     });
 }
 
-function evalEmbedded(parent) {
+function evalEmbedded(parent, frontMatter) {
     for (const codeEl of parent.querySelectorAll('code.lang-javascript')) {
         const match = codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
         if (!match)
@@ -319,7 +331,7 @@ function evalEmbedded(parent) {
         const config = JSON.parse(match[1]);
         if (config.eval) {
             const fn = new Function(codeEl.innerText);
-            fn.call({preEl: codeEl.parentElement, codeEl});
+            fn.call({preEl: codeEl.parentElement, codeEl, frontMatter});
             codeEl.parentElement.classList.add('evaluated');
         }
     }
