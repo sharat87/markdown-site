@@ -343,10 +343,22 @@ function evalEmbedded(parent, frontMatter) {
         const config = JSON.parse(match[1]);
         if (config.eval) {
             const fn = new Function(codeEl.innerText);
-            fn.call({preEl: codeEl.parentElement, codeEl, frontMatter});
+            fn.call({preEl: codeEl.parentElement, codeEl, frontMatter, hide: contextHide});
             codeEl.parentElement.classList.add('evaluated');
         }
     }
+}
+
+function contextHide() {
+    const showBtn = document.createElement('button');
+    showBtn.innerText = 'Show Code';
+    const box = this.preEl;
+    showBtn.addEventListener('click', (event) => {
+        showBtn.remove();
+        box.style.display = '';
+    });
+    this.preEl.insertAdjacentElement('afterend', showBtn);
+    this.preEl.style.display = 'none';
 }
 
 /**
