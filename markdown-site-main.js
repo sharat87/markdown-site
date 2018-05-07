@@ -19,11 +19,12 @@ el.text = 'MathJax.Hub.Config(' + JSON.stringify(MATH_JAX_CONFIG) + ')';
 document.head.appendChild(el);
 
 // Load library scripts needed.
-script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js')
-    .then(() => script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js'))
-    .then(main);
+const scriptPromises = [];
+script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js',
+    script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'));
 script('https://unpkg.com/marked/marked.min.js');
 script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
+script('https://unpkg.com/mermaid/dist/mermaid.min.js');
 
 class Compiler {
     compile(raw) {
@@ -63,6 +64,9 @@ class Compiler {
 
         if (lang === 'math')
             return '<p>[[[[[' + text + ']]]]]</p>';
+
+        if (lang === 'mermaid')
+            return '<div class=mermaid>' + text + '</div>';
 
         const pre = document.createElement('pre');
         pre.innerHTML = '<code></code>';
@@ -258,21 +262,30 @@ const mainEl = document.getElementById('main');
 const loadingEl = document.getElementById('loadingBox');
 const compiler = new Compiler();
 
+Promise.all(scriptPromises).then(main);
+
 function main() {
     window.addEventListener('hashchange', onHashChange);
     onHashChange();
     new Finder(document.getElementById('finder')).load('pages.txt');
 }
 
-function script(url) {
+function script(url, after) {
     const el = document.createElement('script');
     el.setAttribute('async', 'async');
     el.src = url;
-    document.head.appendChild(el);
 
-    return new Promise((resolve, reject) => {
+    if (after)
+        after.then(() => document.head.appendChild(el));
+    else
+        document.head.appendChild(el);
+
+    const promise = new Promise((resolve, reject) => {
         el.onload = () => resolve();
     });
+
+    scriptPromises.push(promise);
+    return promise;
 }
 
 function onHashChange(event) {
@@ -315,6 +328,7 @@ function render(url, el, cb) {
         setTimeout(() => {
             evalEmbedded(el, frontMatter);
             MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+            mermaid.init();
         });
 
         cb && cb();
