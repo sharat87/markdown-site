@@ -5,7 +5,7 @@ const scripts = [
         text: 'MathJax.Hub.Config(' + JSON.stringify({
             tex2jax: {
                 inlineMath: [['${', '}']],
-                displayMath: [['\\[', '\\]']],
+                displayMath: [['\\[', '\\]'], ['[[[[[', ']]]]]']],
             },
             jax: ['input/TeX', 'output/CommonHTML'],
             extensions: ['tex2jax.js', 'MathMenu.js', 'MathZoom.js', 'AssistiveMML.js', 'a11y/accessibility-menu.js'],
@@ -76,6 +76,8 @@ class Compiler {
     }
 
     static renderCode(text, lang) {
+        if (lang === 'math')
+            return '<p>[[[[[' + text + ']]]]]</p>';
         const pre = document.createElement('pre');
         pre.innerHTML = '<code></code>';
         if (lang && window.hljs.listLanguages().indexOf(lang) >= 0) {
