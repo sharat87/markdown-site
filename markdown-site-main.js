@@ -1,6 +1,7 @@
 const scripts = [
     {src: 'https://unpkg.com/marked/marked.min.js'},
     {src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'},
+    {src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js'},
     {
         text: 'MathJax.Hub.Config(' + JSON.stringify({
             tex2jax: {
@@ -76,15 +77,15 @@ class Compiler {
     }
 
     static renderCode(text, lang) {
-        if (lang === 'math')
-            return '<p>[[[[[' + text + ']]]]]</p>';
-
         if (!lang && text.startsWith(':::')) {
             text = text.substr(3);
             const index = text.indexOf('\n');
             lang = text.substr(0, index);
             text = text.substr(index + 1);
         }
+
+        if (lang === 'math')
+            return '<p>[[[[[' + text + ']]]]]</p>';
 
         const pre = document.createElement('pre');
         pre.innerHTML = '<code></code>';
