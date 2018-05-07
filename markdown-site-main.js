@@ -78,6 +78,14 @@ class Compiler {
     static renderCode(text, lang) {
         if (lang === 'math')
             return '<p>[[[[[' + text + ']]]]]</p>';
+
+        if (!lang && text.startsWith(':::')) {
+            text = text.substr(3);
+            const index = text.indexOf('\n');
+            lang = text.substr(0, index);
+            text = text.substr(index + 1);
+        }
+
         const pre = document.createElement('pre');
         pre.innerHTML = '<code></code>';
         if (lang && window.hljs.listLanguages().indexOf(lang) >= 0) {
