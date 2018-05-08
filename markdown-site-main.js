@@ -384,7 +384,7 @@ class Loader {
         }
 
         setTimeout(() => {
-            this.evalEmbedded(el, frontMatter);
+            Loader.evalEmbedded(el, frontMatter);
             App.updateTimeDisplays();
             MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
             mermaid.init();
