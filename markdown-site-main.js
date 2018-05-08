@@ -362,7 +362,7 @@ class Loader {
 
         for (const e of el.getElementsByTagName('a'))
             if (e.href.endsWith('.md'))
-                e.setAttribute('href', '#' + e.getAttribute('href'));
+                e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
 
         setTimeout(() => {
             this.evalEmbedded(el, frontMatter);
