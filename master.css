@@ -89,6 +89,24 @@ th {
     text-align: left;
 }
 
+blockquote {
+    border-left: 2px solid rgba(0, 0, 0, .3);
+    margin-left: 1.5em;
+    padding: 6px .5em;
+    background-color: rgba(0, 0, 0, .07);
+    font-style: italic;
+    color: rgba(0, 0, 0, .8);
+    overflow-x: auto;
+}
+
+blockquote > p:first-child {
+    margin-top: 0;
+}
+
+blockquote > p:last-child {
+    margin-bottom: 0;
+}
+
 #finder {
     position: fixed;
     top: 0;
