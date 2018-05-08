@@ -156,14 +156,14 @@ th {
     color: antiquewhite;
 }
 
-.author-msg, .last-mod-msg {
+.page-desc {
     font-style: italic;
     font-size: .8em;
     opacity: .7;
     margin: 0;
 }
 
-h1 + .author-msg {
+h1 + .page-desc {
     margin-top: -2em;
 }
 

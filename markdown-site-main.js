@@ -270,18 +270,18 @@ class Loader {
         const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
         document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
-
-        const lastModified = new Date(headers.get('last-modified'));
-        el.firstElementChild.insertAdjacentHTML(
-            hasTitleH1 ? 'afterend' : 'beforebegin',
-            '<p class="last-mod-msg">Last modified <time datetime="' + lastModified.toISOString() + '">' +
-                lastModified + '</time>.</p>');
+        const pageDesc = [];
 
         const authorEl = document.querySelector('meta[name="author"]');
         if (authorEl)
-            el.firstElementChild.insertAdjacentHTML(
-                hasTitleH1 ? 'afterend' : 'beforebegin',
-                '<p class="author-msg">Written by ' + authorEl.content + '.</p>');
+            pageDesc.push('Written by ' + authorEl.content + '.');
+
+        const lastModified = new Date(headers.get('last-modified'));
+        pageDesc.push('Last modified <time datetime="' + lastModified.toISOString() + '">' + lastModified + '</time>.');
+
+        el.firstElementChild.insertAdjacentHTML(
+            hasTitleH1 ? 'afterend' : 'beforebegin',
+            '<p class=page-desc>' + pageDesc.join(' ') + '</p>');
 
         for (const e of el.getElementsByTagName('a'))
             if (e.href.endsWith('.md'))
