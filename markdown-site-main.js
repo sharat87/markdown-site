@@ -85,15 +85,12 @@ class Compiler {
         const para = document.createElement('p');
         para.innerHTML = html.replace(/^note\b/i, '<span class=note>$&</span>');
 
-        for (const node of para.childNodes) {
-            let content = node.textContent;
-            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE')
-                content = Compiler.symbolize(content);
-
-            const match = content.match(/^{([-.a-z]+?)}\s*/);
-
+        // Additional classes.
+        if (para.firstChild.nodeType === Node.TEXT_NODE) {
+            const node = para.firstChild;
+            const match = node.textContent.match(/^{([-.a-z]+?)}\s*/);
             if (match) {
-                content = content.substr(match[0].length);
+                node.textContent = node.textContent.substr(match[0].length);
                 const attrs = match[1].split(/\s+/);
                 for (const attr of attrs) {
                     if (attr.startsWith('.'))
@@ -102,10 +99,9 @@ class Compiler {
                         para.setAttribute('id', attr.substr(1));
                 }
             }
-
-            node.textContent = content;
         }
 
+        Compiler.symbolize(para);
         Compiler.applyPriority(para);
         return para.outerHTML;
     }
@@ -125,8 +121,11 @@ class Compiler {
         }
     }
 
-    static symbolize(text) {
-        return text.replace(/->/g, '\u2192').replace(/<-/g, '\u2190');
+    static symbolize(el) {
+        for (const node of el.childNodes) {
+            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE')
+                node.textContent = node.textContent.replace(/->/g, '\u2192').replace(/<-/g, '\u2190');
+        }
     }
 }
 
