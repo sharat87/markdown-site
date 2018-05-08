@@ -274,7 +274,6 @@ class Finder {
                     score += 40;
                 //score = score - (4 * (i - jLastMatched - 1)) // See graph of `y=4(x-1)`.
 
-                // TODO: Consider other word delimiters.
                 if (j === 0 || haystack[j - 1] === ' ') {
                     score += 10;
                     if (i === 0)
@@ -318,23 +317,26 @@ class Finder {
 class Loader {
     static load(url, el) {
         return fetch(url, {cache: 'no-cache'})
-            .then(this.onResponse)
-            .then(([text, headers]) => this.showPage(el, text, headers))
-            .catch((response) => this.onError(el, response));
+            .then((response) => Loader.onResponse(el, response))
+            .then(Loader.showPage).catch(Loader.onError);
     }
 
-    static onResponse(response) {
+    static onResponse(el, response) {
         if (response.ok) {
             return Promise.all([
+                Promise.resolve(el),
                 response.text(),
                 Promise.resolve(response.headers),
             ]);
         } else {
-            return Promise.reject(response);
+            return Promise.all([
+                Promise.resolve(el),
+                Promise.reject(response),
+            ]);
         }
     }
 
-    static onError(el, response) {
+    static onError([el, response]) {
         console.error('Error fetching document.', response);
         const tplEl = document.getElementById('status' + response.status);
         if (tplEl) {
@@ -347,7 +349,7 @@ class Loader {
         return Promise.reject();
     }
 
-    static showPage(el, text, headers) {
+    static showPage([el, text, headers]) {
         const {frontMatter, html} = Compiler.compile(text);
         el.innerHTML = html + '<div class=page-end><span>&#10087;</span></div>';
         const hasTitleH1 = el.firstElementChild.tagName === 'H1';
@@ -440,6 +442,7 @@ class FancyTable {
         this.tableEl = tableEl;
         this.rows = Array.from(this.tableEl.tBodies[0].getElementsByTagName('tr'));
         this.sorts = [];
+        this.boundRowCompareFn = this.rowCompareFn.bind(this);
     }
 
     apply() {
@@ -480,7 +483,7 @@ class FancyTable {
     }
 
     orderRows() {
-        const sortedRows = this.rows.slice().sort(this.rowCompareFn.bind(this));
+        const sortedRows = this.rows.slice().sort(this.boundRowCompareFn);
         const tBody = this.tableEl.tBodies[0];
         for (const tr of sortedRows)
             tBody.appendChild(tr);
