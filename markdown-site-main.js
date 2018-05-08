@@ -377,6 +377,10 @@ class Loader {
             });
         }
 
+        for (const tableEl of el.getElementsByTagName('table')) {
+            new FancyTable(tableEl).apply();
+        }
+
         setTimeout(() => {
             this.evalEmbedded(el, frontMatter);
             App.updateTimeDisplays();
@@ -428,6 +432,86 @@ class LoadingOSD {
 
     static hide() {
         this.getBox().classList.add('hide');
+    }
+}
+
+class FancyTable {
+    constructor(tableEl) {
+        this.tableEl = tableEl;
+        this.rows = Array.from(this.tableEl.tBodies[0].getElementsByTagName('tr'));
+        this.sorts = [];
+    }
+
+    apply() {
+        this.tableEl.classList.add('fancy');
+        this.tableEl.addEventListener('click', this.onClick.bind(this));
+    }
+
+    onClick(event) {
+        if (event.target.tagName === 'A')
+            return;
+
+        const th = event.target.closest('th, td');
+        if (th.tagName !== 'TH')
+            return;
+
+        const index = Array.from(th.parentElement.children).indexOf(th);
+        let isFound = false, i = 0, removeAt = null;
+
+        for (const sorting of this.sorts) {
+            if (sorting.index === index) {
+                if (sorting.isAsc)
+                    sorting.isAsc = false;
+                else
+                    removeAt = i;
+                isFound = true;
+                break;
+            }
+            i++;
+        }
+
+        if (!isFound)
+            this.sorts.push({index, isAsc: true});
+        if (removeAt !== null)
+            this.sorts.splice(removeAt, 1);
+
+        this.orderRows();
+        this.updateMarkers();
+    }
+
+    orderRows() {
+        const sortedRows = this.rows.slice().sort(this.rowCompareFn.bind(this));
+        const tBody = this.tableEl.tBodies[0];
+        for (const tr of sortedRows)
+            tBody.appendChild(tr);
+    }
+
+    rowCompareFn(tr1, tr2) {
+        for (const {index, isAsc} of this.sorts) {
+            const td1 = tr1.children[index], td2 = tr2.children[index];
+            if (td1.textContent < td2.textContent)
+                return isAsc ? -1 : 1;
+            if (td1.textContent > td2.textContent)
+                return isAsc ? 1 : -1;
+        }
+        return 0;
+    }
+
+    updateMarkers() {
+        for (const marker of this.tableEl.querySelectorAll('.sort-marker'))
+            marker.remove();
+
+        const ths = this.tableEl.tHead.getElementsByTagName('th');
+        let i = 1;
+        for (const sorting of this.sorts) {
+            const th = ths[sorting.index];
+            th.insertAdjacentHTML(
+                'beforeend',
+                '\n<span class=sort-marker>' +
+                '<span class=marker>' + (sorting.isAsc ? '▲' : '▼') + '</span>' +
+                '<span class=num>' + i + '</span></span>');
+            ++i;
+        }
     }
 }
 

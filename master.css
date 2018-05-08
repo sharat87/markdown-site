@@ -89,6 +89,21 @@ th {
     text-align: left;
 }
 
+table.fancy th {
+    cursor: pointer;
+}
+
+table.fancy .sort-marker {
+    margin-left: 1em;
+    font-weight: normal;
+}
+
+table.fancy .sort-marker .marker {
+    display: inline-block;
+    color: cornflowerblue;
+    transform: scale(.6);
+}
+
 blockquote {
     border-left: 2px solid rgba(0, 0, 0, .3);
     margin-left: 1.5em;
