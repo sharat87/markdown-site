@@ -343,7 +343,7 @@ class Loader {
 
     static showPage(el, text, headers) {
         const {frontMatter, html} = Compiler.compile(text);
-        el.innerHTML = html + '<div class="page-end"><span>&#10087;</span></div>';
+        el.innerHTML = html + '<div class=page-end><span>&#10087;</span></div>';
         const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
         document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
@@ -363,6 +363,13 @@ class Loader {
         for (const e of el.getElementsByTagName('a'))
             if (e.href.endsWith('.md'))
                 e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
+
+        for (const codeEl of el.querySelectorAll('pre > code')) {
+            codeEl.insertAdjacentHTML('beforebegin', '<button class=copy-btn type=button>Copy</button>');
+            codeEl.previousElementSibling.addEventListener('click', (event) => {
+                navigator.clipboard.writeText(codeEl.innerText);
+            });
+        }
 
         setTimeout(() => {
             this.evalEmbedded(el, frontMatter);

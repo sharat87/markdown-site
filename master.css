@@ -58,6 +58,8 @@ pre {
     margin-left: 2em;
     background-color: rgba(0, 0, 0, .02);
     overflow-x: auto;
+    position: relative;
+    font-family: inherit;
 }
 
 code {
@@ -184,6 +186,17 @@ h1 + .page-desc {
     line-height: 1em;
     background-color: white;
     padding: 0 1em;
+}
+
+pre .copy-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    opacity: .4;
+}
+
+pre .copy-btn:hover {
+    opacity: 1;
 }
 
 @media print {
