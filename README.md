@@ -25,8 +25,10 @@ MIT License.
 
 This project uses the following libraries:
 
-1. [Marked.js](https://marked.js.org).
-2. [highlight.js](https://highlightjs.org).
+1. Markdown compiler -> [marked](https://marked.js.org).
+2. Syntax highlighter -> [highlight.js](https://highlightjs.org).
+3. Math renderer -> [MathJax](https://www.mathjax.org).
+4. Flowchart rendering -> [mermaid](https://mermaidjs.github.io).
 
 ## Contribute
 
