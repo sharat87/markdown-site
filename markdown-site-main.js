@@ -59,7 +59,7 @@ class Compiler {
             lang = text.substr(0, index);
             text = text.substr(index + 1);
 
-        } else if (!lang) {
+        } else if (!lang && frontMatter) {
             lang = frontMatter.defaultLang;
 
         }
