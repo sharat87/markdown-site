@@ -373,7 +373,7 @@ class App {
         window.addEventListener('hashchange', App.onHashChange);
         App.onHashChange();
 
-        setInterval(App.updateTimeDisplays, 1000);
+        setInterval(App.updateTimeDisplays, 60000);
         App.updateTimeDisplays();
 
         new Finder(document.getElementById('finder')).load('pages.txt');
