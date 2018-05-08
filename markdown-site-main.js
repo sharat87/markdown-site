@@ -110,6 +110,7 @@ class Compiler {
         const li = document.createElement('li');
         li.innerHTML = html;
         Compiler.applyPriority(li);
+        Compiler.symbolize(li);
         return li.outerHTML;
     }
 
