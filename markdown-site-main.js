@@ -338,8 +338,11 @@ class App {
     }
 
     static updateTimeDisplays() {
-        for (const timeEl of document.querySelectorAll('time[datetime]'))
-            timeEl.innerText = App.timeInWords(new Date(timeEl.dateTime)) + ' ago';
+        for (const timeEl of document.querySelectorAll('time[datetime]')) {
+            const time = new Date(timeEl.dateTime);
+            timeEl.innerText = App.timeInWords(time) + ' ago';
+            timeEl.title = time.toString();
+        }
     }
 
     static timeInWords(time) {
