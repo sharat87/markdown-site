@@ -171,7 +171,7 @@ class Finder {
                 }
 
                 if (event.key === 'r') {
-                    onHashChange();
+                    App.onHashChange();
                 }
             }
 
