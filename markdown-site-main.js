@@ -271,10 +271,11 @@ class Loader {
 
         document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
 
-        const lastModified = headers.get('last-modified');
+        const lastModified = new Date(headers.get('last-modified'));
         el.firstElementChild.insertAdjacentHTML(
             hasTitleH1 ? 'afterend' : 'beforebegin',
-            '<p class="last-mod-msg">Last modified: ' + lastModified + '.</p>');
+            '<p class="last-mod-msg">Last modified <time datetime="' + lastModified.toISOString() + '">' +
+                lastModified + '</time>.</p>');
 
         const authorEl = document.querySelector('meta[name="author"]');
         if (authorEl)
@@ -288,6 +289,7 @@ class Loader {
 
         setTimeout(() => {
             this.evalEmbedded(el, frontMatter);
+            App.updateTimeDisplays();
             MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
             mermaid.init();
         });
@@ -335,9 +337,45 @@ class App {
         ]).finally(() => loadingEl.classList.add('hide'));
     }
 
+    static updateTimeDisplays() {
+        for (const timeEl of document.querySelectorAll('time[datetime]'))
+            timeEl.innerText = App.timeInWords(new Date(timeEl.dateTime)) + ' ago';
+    }
+
+    static timeInWords(time) {
+        // Source: https://stackoverflow.com/a/3177838/151048
+        const seconds = Math.floor((new Date() - time) / 1000);
+
+        let interval = Math.floor(seconds / 31536000);
+        if (interval > 1)
+            return interval + ' years';
+
+        interval = Math.floor(seconds / 2592000);
+        if (interval > 1)
+            return interval + ' months';
+
+        interval = Math.floor(seconds / 86400);
+        if (interval > 1)
+            return interval + ' days';
+
+        interval = Math.floor(seconds / 3600);
+        if (interval > 1)
+            return interval + ' hours';
+
+        interval = Math.floor(seconds / 60);
+        if (interval > 1)
+            return interval + ' minutes';
+
+        return Math.floor(seconds) + ' seconds';
+    }
+
     static main() {
         window.addEventListener('hashchange', App.onHashChange);
         App.onHashChange();
+
+        setInterval(App.updateTimeDisplays, 1000);
+        App.updateTimeDisplays();
+
         new Finder(document.getElementById('finder')).load('pages.txt');
     }
 }
