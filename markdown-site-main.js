@@ -83,7 +83,7 @@ class Compiler {
 
     static renderParagraph(html) {
         const para = document.createElement('p');
-        para.innerHTML = html;
+        para.innerHTML = html.replace(/^note\b/i, '<span class=note>$&</span>');
 
         for (const node of para.childNodes) {
             let content = node.textContent;
