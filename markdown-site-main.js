@@ -58,10 +58,11 @@ class Compiler {
             const index = text.indexOf('\n');
             lang = text.substr(0, index);
             text = text.substr(index + 1);
-        }
 
-        if (!lang)
+        } else if (!lang) {
             lang = frontMatter.defaultLang;
+
+        }
 
         if (lang === 'math')
             return '<p>[[[[[' + text + ']]]]]</p>';
