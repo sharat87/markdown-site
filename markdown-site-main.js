@@ -336,8 +336,14 @@ class Loader {
 
     static onError(el, response) {
         console.error('Error fetching document.', response);
-        el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
-            response.statusText + '</h1>';
+        const tplEl = document.getElementById('status' + response.status);
+        if (tplEl) {
+            el.innerHTML = '';
+            el.appendChild(tplEl.content);
+        } else {
+            el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
+                response.statusText + '</h1>';
+        }
         return Promise.reject();
     }
 
