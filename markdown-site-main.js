@@ -400,18 +400,36 @@ class Loader {
     }
 }
 
+class LoadingOSD {
+    static getBox() {
+        if (!this._box) {
+            document.body.insertAdjacentHTML('beforeend', '<div class=loading-box>Loading&hellip;</div>');
+            this._box = document.body.lastElementChild;
+        }
+        return this._box;
+    }
+
+    static show() {
+        this.getBox().classList.remove('hide');
+    }
+
+    static hide() {
+        this.getBox().classList.add('hide');
+    }
+}
+
 class App {
     static onHashChange(event) {
         if (event)
             event.preventDefault();
-        loadingEl.classList.remove('hide');
+        LoadingOSD.show();
         let page = location.hash.substr(1);
         if (!page || page.endsWith('/'))
             page += 'index.md';
 
         Promise.all([
             Loader.load(page, mainEl),
-        ]).finally(() => loadingEl.classList.add('hide'));
+        ]).finally(LoadingOSD.hide.bind(LoadingOSD));
     }
 
     static updateTimeDisplays() {
@@ -466,7 +484,6 @@ document.body.insertAdjacentHTML('afterbegin', `
         <input type="search" placeholder="Type to filter&hellip;">
         <div class="listing"></div>
     </div>
-    <div id="loadingBox">Loading&hellip;</div>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
 `);
@@ -483,7 +500,6 @@ for (const script of document.querySelectorAll('script[src]')) {
 }
 
 const mainEl = document.getElementById('main');
-const loadingEl = document.getElementById('loadingBox');
 
 Promise.all(scriptPromises).then(App.main);
 

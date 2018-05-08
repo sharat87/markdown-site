@@ -36,7 +36,7 @@ hr {
     display: none;
 }
 
-#loadingBox {
+.loading-box {
     position: fixed;
     top: 0;
     left: 50%;
