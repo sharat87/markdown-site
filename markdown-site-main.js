@@ -150,13 +150,18 @@ class Finder {
     load(pagesUrl) {
         this.pagesUrl = pagesUrl;
 
-        fetchText(this.pagesUrl).then((text) => {
-            this.pages.splice(0, this.pages.length);
-            for (let page of text.trim().split('\n'))
-                this.pages.push(page.replace(/^\.\//, ''));
-            this.pages.sort();
-            this.applyFilter();
-        });
+        fetch(this.pagesUrl)
+            .then((response) => response.ok ? response.text() : Promise.reject(response))
+            .then((text) => {
+                this.pages.splice(0, this.pages.length);
+                for (let page of text.trim().split('\n'))
+                    this.pages.push(page.replace(/^\.\//, ''));
+                this.pages.sort();
+                this.applyFilter();
+            })
+            .catch((response) => {
+                console.warn('Could not load pages from `' + pagesUrl + '`.', response);
+            });
     }
 
     onKeyDown(event) {
@@ -498,8 +503,4 @@ function script(url, after) {
 
     scriptPromises.push(promise);
     return promise;
-}
-
-function fetchText(url) {
-    return fetch(url, {cache: 'no-cache'}).then((response) => response.text());
 }
