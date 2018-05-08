@@ -27,7 +27,7 @@ script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
 script('https://unpkg.com/mermaid/dist/mermaid.min.js');
 
 class Compiler {
-    compile(raw) {
+    static compile(raw) {
         let frontMatter = null;
         if (raw.startsWith('{\n')) {
             const endIndex = raw.indexOf('\n}\n');
@@ -39,12 +39,12 @@ class Compiler {
             frontMatter,
             html: window.marked(raw, {
                 smartypants: true,
-                renderer: this.makeRenderer(frontMatter),
+                renderer: Compiler.makeRenderer(frontMatter),
             }),
         };
     }
 
-    makeRenderer(frontMatter) {
+    static makeRenderer(frontMatter) {
         const renderer = new marked.Renderer();
         renderer.code = (text, lang) => Compiler.renderCode.call(renderer, text, lang, frontMatter);
         renderer.paragraph = Compiler.renderParagraph;
@@ -261,7 +261,6 @@ for (const script of document.querySelectorAll('script[src]')) {
 
 const mainEl = document.getElementById('main');
 const loadingEl = document.getElementById('loadingBox');
-const compiler = new Compiler();
 
 Promise.all(scriptPromises).then(main);
 
@@ -316,7 +315,7 @@ function render(url, el) {
             }
         })
         .then(([text, headers]) => {
-            const {frontMatter, html} = compiler.compile(text);
+            const {frontMatter, html} = Compiler.compile(text);
             el.innerHTML = html + '<div class="page-end"><span>&#10087;</span></div>';
             const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
