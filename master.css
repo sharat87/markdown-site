@@ -167,6 +167,21 @@ h1 + .author-msg {
     margin-top: -2em;
 }
 
+.page-end {
+    border-top: 1px solid rgba(0, 0, 0, .2);
+    color: rgba(0, 0, 0, .2);
+    text-align: center;
+    margin-top: 4em;
+}
+
+.page-end span {
+    display: inline-block;
+    transform: translateY(-.6em);
+    line-height: 1em;
+    background-color: white;
+    padding: 0 1em;
+}
+
 @media print {
     body {
         border: none;

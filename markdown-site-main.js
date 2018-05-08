@@ -300,7 +300,6 @@ function onHashChange(event) {
         render(page, mainEl),
         // TODO: Add sidebar and nav-bar.
     ]).finally(() => loadingEl.classList.add('hide'));
-
 }
 
 function render(url, el) {
@@ -317,7 +316,7 @@ function render(url, el) {
         })
         .then(([text, headers]) => {
             const {frontMatter, html} = compiler.compile(text);
-            el.innerHTML = html;
+            el.innerHTML = html + '<div class="page-end"><span>&#10087;</span></div>';
             const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
             document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
