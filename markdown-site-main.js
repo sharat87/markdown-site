@@ -219,7 +219,7 @@ class Finder {
         const matches = [];
 
         for (let page of this.pages) {
-            const {score, hlMarkup} = checkMatch(page, needle);
+            const {score, hlMarkup} = Finder.checkMatch(page, needle);
             if (score)
                 matches.push({score, page, hlMarkup});
         }
@@ -235,6 +235,78 @@ class Finder {
             this.activeLink.classList.add('active');
 
         this.prevNeedle = needle;
+    }
+
+    /**
+     * A simple home made fuzzy matching algorithm implementation. Returns the match score. If it's 0, then there is no
+     * match. Otherwise, the positive integer returned is a measure of how good the match is.
+     * @param haystack {String} Search in this string.
+     * @param needle {String} Search for this string.
+     * @returns object with two properties, `score` and `hlMarkup` which is the highlighted haystack.
+     */
+    static checkMatch(haystack, needle) {
+        if (needle === '')
+            return {score: 1, hlMarkup: haystack};
+
+        haystack = haystack.toLowerCase();
+        let i = 0, j = 0;
+        const needleLen = needle.length;
+        const haystackLen = haystack.length;
+        let jLastMatched = 0, score = 0;
+
+        const matchedHaystack = [];
+        let inMatch = false;
+        const HL_OPEN = '<span class=hl>', HL_CLOSE = '</span>';
+
+        while (i < needleLen && j < haystackLen) {
+            const nc = needle[i];
+            const hc = haystack[j];
+
+            if (nc === hc) {
+                score += 10;
+
+                if (jLastMatched === j - 1)
+                    score += 40;
+                //score = score - (4 * (i - jLastMatched - 1)) // See graph of `y=4(x-1)`.
+
+                // TODO: Consider other word delimiters.
+                if (j === 0 || haystack[j - 1] === ' ') {
+                    score += 10;
+                    if (i === 0)
+                        score += 25;
+                    if (j === 0)
+                        score += 25;
+                }
+
+                if (!inMatch) {
+                    matchedHaystack.push(HL_OPEN);
+                    inMatch = true;
+                }
+
+                ++i;
+                jLastMatched = j;
+
+            } else if (inMatch) {
+                matchedHaystack.push(HL_CLOSE);
+                inMatch = false;
+
+            }
+
+            matchedHaystack.push(hc);
+            ++j;
+        }
+
+        if (i < needleLen)
+            return {score: 0, hlMarkup: haystack};
+
+        // All else being same, smaller haystacks should score more.
+        score += Math.ceil(20 * needleLen / haystackLen);
+
+        if (inMatch)
+            matchedHaystack.push(HL_CLOSE);
+        matchedHaystack.push(haystack.substr(j));
+
+        return {score: score, hlMarkup: matchedHaystack.join('')};
     }
 }
 
@@ -426,78 +498,6 @@ function script(url, after) {
 
     scriptPromises.push(promise);
     return promise;
-}
-
-/**
- * A simple home made fuzzy matching algorithm implementation. Returns the match score. If it's 0, then there is no
- * match. Otherwise, the positive integer returned is a measure of how good the match is.
- * @param haystack {String} Search in this string.
- * @param needle {String} Search for this string.
- * @returns object with two properties, `score` and `hlMarkup` which is the highlighted haystack.
- */
-function checkMatch(haystack, needle) {
-    if (needle === '')
-        return {score: 1, hlMarkup: haystack};
-
-    haystack = haystack.toLowerCase();
-    let i = 0, j = 0;
-    const needleLen = needle.length;
-    const haystackLen = haystack.length;
-    let jLastMatched = 0, score = 0;
-
-    const matchedHaystack = [];
-    let inMatch = false;
-    const HL_OPEN = '<span class=hl>', HL_CLOSE = '</span>';
-
-    while (i < needleLen && j < haystackLen) {
-        const nc = needle[i];
-        const hc = haystack[j];
-
-        if (nc === hc) {
-            score += 10;
-
-            if (jLastMatched === j - 1)
-                score += 40;
-            //score = score - (4 * (i - jLastMatched - 1)) // See graph of `y=4(x-1)`.
-
-            // TODO: Consider other word delimiters.
-            if (j === 0 || haystack[j - 1] === ' ') {
-                score += 10;
-                if (i === 0)
-                    score += 25;
-                if (j === 0)
-                    score += 25;
-            }
-
-            if (!inMatch) {
-                matchedHaystack.push(HL_OPEN);
-                inMatch = true;
-            }
-
-            ++i;
-            jLastMatched = j;
-
-        } else if (inMatch) {
-            matchedHaystack.push(HL_CLOSE);
-            inMatch = false;
-
-        }
-
-        matchedHaystack.push(hc);
-        ++j;
-    }
-
-    if (i < needleLen)
-        return {score: 0, hlMarkup: haystack};
-
-    // All else being same, smaller haystacks should score more.
-    score += Math.ceil(20 * needleLen / haystackLen);
-
-    if (inMatch)
-        matchedHaystack.push(HL_CLOSE);
-    matchedHaystack.push(haystack.substr(j));
-
-    return {score: score, hlMarkup: matchedHaystack.join('')};
 }
 
 function fetchText(url) {
