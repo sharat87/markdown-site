@@ -28,9 +28,6 @@ script('https://unpkg.com/mermaid/dist/mermaid.min.js');
 
 class Compiler {
     compile(raw) {
-        if (!this.renderer)
-            this.makeRenderer();
-
         let frontMatter = null;
         if (raw.startsWith('{\n')) {
             const endIndex = raw.indexOf('\n}\n');
@@ -42,25 +39,29 @@ class Compiler {
             frontMatter,
             html: window.marked(raw, {
                 smartypants: true,
-                renderer: this.renderer,
+                renderer: this.makeRenderer(frontMatter),
             }),
         };
     }
 
-    makeRenderer() {
-        this.renderer = new marked.Renderer();
-        this.renderer.code = Compiler.renderCode;
-        this.renderer.paragraph = Compiler.renderParagraph;
-        this.renderer.listitem = Compiler.renderListItem;
+    makeRenderer(frontMatter) {
+        const renderer = new marked.Renderer();
+        renderer.code = (text, lang) => Compiler.renderCode.call(renderer, text, lang, frontMatter);
+        renderer.paragraph = Compiler.renderParagraph;
+        renderer.listitem = Compiler.renderListItem;
+        return renderer;
     }
 
-    static renderCode(text, lang) {
+    static renderCode(text, lang, frontMatter) {
         if (!lang && text.startsWith(':::')) {
             text = text.substr(3);
             const index = text.indexOf('\n');
             lang = text.substr(0, index);
             text = text.substr(index + 1);
         }
+
+        if (!lang)
+            lang = frontMatter.defaultLang;
 
         if (lang === 'math')
             return '<p>[[[[[' + text + ']]]]]</p>';
