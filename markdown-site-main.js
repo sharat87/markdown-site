@@ -237,6 +237,110 @@ class Finder {
     }
 }
 
+class Loader {
+    static load(url, el) {
+        return fetch(url, {cache: 'no-cache'})
+            .then(this.onResponse)
+            .then(([text, headers]) => this.showPage(el, text, headers))
+            .catch((response) => this.onError(el, response));
+    }
+
+    static onResponse(response) {
+        if (response.ok) {
+            return Promise.all([
+                response.text(),
+                Promise.resolve(response.headers),
+            ]);
+        } else {
+            return Promise.reject(response);
+        }
+    }
+
+    static onError(el, response) {
+        console.error('Error fetching document.', response);
+        el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
+            response.statusText + '</h1>';
+        return Promise.reject();
+    }
+
+    static showPage(el, text, headers) {
+        const {frontMatter, html} = Compiler.compile(text);
+        el.innerHTML = html + '<div class="page-end"><span>&#10087;</span></div>';
+        const hasTitleH1 = el.firstElementChild.tagName === 'H1';
+
+        document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
+
+        const lastModified = headers.get('last-modified');
+        el.firstElementChild.insertAdjacentHTML(
+            hasTitleH1 ? 'afterend' : 'beforebegin',
+            '<p class="last-mod-msg">Last modified: ' + lastModified + '.</p>');
+
+        const authorEl = document.querySelector('meta[name="author"]');
+        if (authorEl)
+            el.firstElementChild.insertAdjacentHTML(
+                hasTitleH1 ? 'afterend' : 'beforebegin',
+                '<p class="author-msg">Written by ' + authorEl.content + '.</p>');
+
+        for (const e of el.getElementsByTagName('a'))
+            if (e.href.endsWith('.md'))
+                e.setAttribute('href', '#' + e.getAttribute('href'));
+
+        setTimeout(() => {
+            this.evalEmbedded(el, frontMatter);
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+            mermaid.init();
+        });
+
+        return Promise.resolve();
+    }
+
+    static evalEmbedded(parent, frontMatter) {
+        for (const codeEl of parent.querySelectorAll('code.lang-javascript')) {
+            const match = codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
+            if (!match)
+                continue;
+            const config = JSON.parse(match[1]);
+            if (config.eval) {
+                const fn = new Function(codeEl.innerText);
+                fn.call({preEl: codeEl.parentElement, codeEl, frontMatter, hide: this.contextHide});
+                codeEl.parentElement.classList.add('evaluated');
+            }
+        }
+    }
+
+    static contextHide() {
+        const showBtn = document.createElement('button');
+        showBtn.innerText = 'Show Code';
+        showBtn.addEventListener('click', () => {
+            showBtn.remove();
+            this.preEl.style.display = '';
+        });
+        this.preEl.insertAdjacentElement('afterend', showBtn);
+        this.preEl.style.display = 'none';
+    }
+}
+
+class App {
+    static onHashChange(event) {
+        if (event)
+            event.preventDefault();
+        loadingEl.classList.remove('hide');
+        let page = location.hash.substr(1);
+        if (!page || page.endsWith('/'))
+            page += 'index.md';
+
+        Promise.all([
+            Loader.load(page, mainEl),
+        ]).finally(() => loadingEl.classList.add('hide'));
+    }
+
+    static main() {
+        window.addEventListener('hashchange', App.onHashChange);
+        App.onHashChange();
+        new Finder(document.getElementById('finder')).load('pages.txt');
+    }
+}
+
 document.body.insertAdjacentHTML('afterbegin', `
     <article id=main></article>
     <div id="finder" class="hide">
@@ -262,13 +366,7 @@ for (const script of document.querySelectorAll('script[src]')) {
 const mainEl = document.getElementById('main');
 const loadingEl = document.getElementById('loadingBox');
 
-Promise.all(scriptPromises).then(main);
-
-function main() {
-    window.addEventListener('hashchange', onHashChange);
-    onHashChange();
-    new Finder(document.getElementById('finder')).load('pages.txt');
-}
+Promise.all(scriptPromises).then(App.main);
 
 function script(url, after) {
     const el = document.createElement('script');
@@ -286,96 +384,6 @@ function script(url, after) {
 
     scriptPromises.push(promise);
     return promise;
-}
-
-function onHashChange(event) {
-    if (event)
-        event.preventDefault();
-    loadingEl.classList.remove('hide');
-    let page = location.hash.substr(1);
-    if (!page || page.endsWith('/'))
-        page += 'index.md';
-
-    Promise.all([
-        render(page, mainEl),
-        // TODO: Add sidebar and nav-bar.
-    ]).finally(() => loadingEl.classList.add('hide'));
-}
-
-function render(url, el) {
-    return fetch(url, {cache: 'no-cache'})
-        .then((response) => {
-            if (response.ok) {
-                return Promise.all([
-                    response.text(),
-                    Promise.resolve(response.headers),
-                ]);
-            } else {
-                return Promise.reject(response);
-            }
-        })
-        .then(([text, headers]) => {
-            const {frontMatter, html} = Compiler.compile(text);
-            el.innerHTML = html + '<div class="page-end"><span>&#10087;</span></div>';
-            const hasTitleH1 = el.firstElementChild.tagName === 'H1';
-
-            document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
-
-            const lastModified = headers.get('last-modified');
-            el.firstElementChild.insertAdjacentHTML(
-                hasTitleH1 ? 'afterend' : 'beforebegin',
-                '<p class="last-mod-msg">Last modified: ' + lastModified + '.</p>');
-
-            const authorEl = document.querySelector('meta[name="author"]');
-            if (authorEl)
-                el.firstElementChild.insertAdjacentHTML(
-                    hasTitleH1 ? 'afterend' : 'beforebegin',
-                    '<p class="author-msg">Written by ' + authorEl.content + '.</p>');
-
-            for (const e of el.getElementsByTagName('a'))
-                if (e.href.endsWith('.md'))
-                    e.setAttribute('href', '#' + e.getAttribute('href'));
-
-            setTimeout(() => {
-                evalEmbedded(el, frontMatter);
-                MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
-                mermaid.init();
-            });
-
-            return Promise.resolve();
-        })
-        .catch((response) => {
-            console.error('Error fetching document.', response);
-            el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
-                response.statusText + '</h1>';
-            return Promise.reject();
-        });
-}
-
-function evalEmbedded(parent, frontMatter) {
-    for (const codeEl of parent.querySelectorAll('code.lang-javascript')) {
-        const match = codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
-        if (!match)
-            continue;
-        const config = JSON.parse(match[1]);
-        if (config.eval) {
-            const fn = new Function(codeEl.innerText);
-            fn.call({preEl: codeEl.parentElement, codeEl, frontMatter, hide: contextHide});
-            codeEl.parentElement.classList.add('evaluated');
-        }
-    }
-}
-
-function contextHide() {
-    const showBtn = document.createElement('button');
-    showBtn.innerText = 'Show Code';
-    const box = this.preEl;
-    showBtn.addEventListener('click', (event) => {
-        showBtn.remove();
-        box.style.display = '';
-    });
-    this.preEl.insertAdjacentElement('afterend', showBtn);
-    this.preEl.style.display = 'none';
 }
 
 /**
