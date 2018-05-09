@@ -401,7 +401,7 @@ class Loader {
             const config = JSON.parse(match[1]);
             if (config.eval) {
                 const fn = new Function(codeEl.innerText);
-                fn.call({preEl: codeEl.parentElement, codeEl, frontMatter, hide: this.contextHide});
+                fn.call({preEl: codeEl.parentElement, codeEl, frontMatter, hide: this.contextHide, articleEl: mainEl});
                 codeEl.parentElement.classList.add('evaluated');
             }
         }
