@@ -361,8 +361,11 @@ class Loader {
         if (authorEl)
             pageDesc.push('Written by ' + authorEl.content + '.');
 
-        const lastModified = new Date(headers.get('last-modified'));
-        pageDesc.push('Last modified <time datetime="' + lastModified.toISOString() + '">' + lastModified + '</time>.');
+        if (headers.has('last-modified')) {
+            const lastModified = new Date(headers.get('last-modified'));
+            pageDesc.push('Last modified <time datetime="' + lastModified.toISOString() + '">' + lastModified +
+                '</time>.');
+        }
 
         el.firstElementChild.insertAdjacentHTML(
             hasTitleH1 ? 'afterend' : 'beforebegin',
