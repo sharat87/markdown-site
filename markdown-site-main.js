@@ -12,6 +12,8 @@ const MATH_JAX_CONFIG = {
     displayIndent: '2em',
 };
 
+const UI_SELECTOR = 'input, select, button, textarea, [contenteditable]';
+
 // Add MathJax config to the page.
 const el = document.createElement('script');
 el.type = 'text/x-mathjax-config';
@@ -166,7 +168,8 @@ class Finder {
 
     onKeyDown(event) {
         if (event.target !== this.searchInput) {
-            if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+            if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
+                    !event.target.matches(UI_SELECTOR)) {
                 if (event.key === 'f') {
                     event.preventDefault();
                     this.el.classList.remove('hide');
