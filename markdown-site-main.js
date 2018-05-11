@@ -420,9 +420,10 @@ class Loader {
         }
     }
 
-    static contextHide() {
+    static contextHide(opts) {
+        opts = opts || {};
         const p = document.createElement('p');
-        p.innerHTML = '<button>Show Code</button>';
+        p.innerHTML = '<button>' + (opts.text || 'Show Code') + '</button>';
         p.firstElementChild.addEventListener('click', () => {
             p.remove();
             this.preEl.style.display = '';
