@@ -407,20 +407,27 @@ class Loader {
             const config = JSON.parse(match[1]);
             if (config.eval) {
                 const fn = new Function(codeEl.innerText);
-                fn.call({preEl: codeEl.parentElement, codeEl, frontMatter, hide: this.contextHide, articleEl: mainEl});
+                fn.call({
+                    preEl: codeEl.parentElement,
+                    codeEl,
+                    frontMatter,
+                    hide: this.contextHide,
+                    articleEl: mainEl,
+                    config,
+                });
                 codeEl.parentElement.classList.add('evaluated');
             }
         }
     }
 
     static contextHide() {
-        const showBtn = document.createElement('button');
-        showBtn.innerText = 'Show Code';
-        showBtn.addEventListener('click', () => {
-            showBtn.remove();
+        const p = document.createElement('p');
+        p.innerHTML = '<button>Show Code</button>';
+        p.firstElementChild.addEventListener('click', () => {
+            p.remove();
             this.preEl.style.display = '';
         });
-        this.preEl.insertAdjacentElement('afterend', showBtn);
+        this.preEl.insertAdjacentElement('afterend', p);
         this.preEl.style.display = 'none';
     }
 }
