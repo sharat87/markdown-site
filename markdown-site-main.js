@@ -390,14 +390,13 @@ class Loader {
             new FancyTable(tableEl).apply();
         }
 
-        setTimeout(() => {
+        return new Promise((resolve, reject) => {
             Loader.evalEmbedded(el, frontMatter);
             App.updateTimeDisplays();
             MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
             mermaid.init();
+            resolve();
         });
-
-        return Promise.resolve();
     }
 
     static evalEmbedded(parent, frontMatter) {
@@ -538,13 +537,27 @@ class App {
         if (event)
             event.preventDefault();
         LoadingOSD.show();
-        let page = location.hash.substr(1);
+
+        let page = location.hash.substr(1), jump = null;
+        if (page.indexOf('#') >= 0)
+            [page, jump] = page.split('#', 2);
         if (!page || page.endsWith('/'))
             page += 'index.md';
 
-        Promise.all([
-            Loader.load(page, mainEl),
-        ]).finally(LoadingOSD.hide.bind(LoadingOSD));
+        if (page === mainEl.dataset.page) {
+            (jump ? mainEl.querySelector('#' + jump) : mainEl.firstElementChild).scrollIntoView();
+            return;
+        }
+
+        mainEl.dataset.page = '';
+
+        Loader.load(page, mainEl)
+            .then(() => {
+                if (jump)
+                    mainEl.querySelector('#' + jump).scrollIntoView();
+                mainEl.dataset.page = page;
+            })
+            .finally(LoadingOSD.hide.bind(LoadingOSD));
     }
 
     static updateTimeDisplays() {
