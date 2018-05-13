@@ -86,23 +86,7 @@ class Compiler {
     static renderParagraph(html) {
         const para = document.createElement('p');
         para.innerHTML = html.replace(/^note\b/i, '<span class=note>$&</span>');
-
-        // Additional classes.
-        if (para.firstChild.nodeType === Node.TEXT_NODE) {
-            const node = para.firstChild;
-            const match = node.textContent.match(/^{([-.a-z]+?)}\s*/);
-            if (match) {
-                node.textContent = node.textContent.substr(match[0].length);
-                const attrs = match[1].split(/\s+/);
-                for (const attr of attrs) {
-                    if (attr.startsWith('.'))
-                        para.classList.add(attr.substr(1));
-                    else if (attr.startsWith('#'))
-                        para.setAttribute('id', attr.substr(1));
-                }
-            }
-        }
-
+        Compiler.applyAttrs(para);
         Compiler.symbolize(para);
         Compiler.applyPriority(para);
         return para.outerHTML;
@@ -114,6 +98,23 @@ class Compiler {
         Compiler.applyPriority(li);
         Compiler.symbolize(li);
         return li.outerHTML;
+    }
+
+    static applyAttrs(el) {
+        if (el.firstChild.nodeType !== Node.TEXT_NODE)
+            return;
+
+        const node = el.firstChild;
+        const match = node.textContent.match(/^{([-.#\w]+?)}\s*/);
+        if (match) {
+            node.textContent = node.textContent.substr(match[0].length);
+            for (const attr of match[1].match(/[.#][-\w]+/g)) {
+                if (attr.startsWith('.'))
+                    el.classList.add(attr.substr(1));
+                else if (attr.startsWith('#'))
+                    el.setAttribute('id', attr.substr(1));
+            }
+        }
     }
 
     static applyPriority(el) {
