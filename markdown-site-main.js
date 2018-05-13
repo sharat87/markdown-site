@@ -180,6 +180,8 @@ class Finder {
                 }
 
                 if (event.key === 'r') {
+                    // FIXME: Think of a better API to reload the page.
+                    mainEl.dataset.page = '';
                     App.onHashChange();
                 }
             }
@@ -546,6 +548,7 @@ class App {
 
         if (page === mainEl.dataset.page) {
             (jump ? mainEl.querySelector('#' + jump) : mainEl.firstElementChild).scrollIntoView();
+            LoadingOSD.hide();
             return;
         }
 
