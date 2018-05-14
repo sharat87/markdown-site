@@ -442,7 +442,7 @@ class Loader {
                     markup.push('<ol>');
                 if (level < lastLevel)
                     markup.push('</ol>');
-                markup.push('<li><a href="#' + pagePrefix + head.id + '">' + head.innerText + '</a>');
+                markup.push('<li><a href="#' + pagePrefix + head.id + '">' + head.innerHTML + '</a>');
                 lastLevel = level;
             }
 
