@@ -172,6 +172,14 @@ class Finder {
 
         document.body.addEventListener('keydown', this.onKeyDown.bind(this));
 
+        // Detect the `X` button click in the search input.
+        this.searchInput.addEventListener('click', (event) => {
+            setTimeout(() => {
+                if (this.searchInput.value === '')
+                    this.applyFilter();
+            });
+        });
+
         this.el.addEventListener('click', (event) => {
             if (event.target.tagName === 'A')
                 this.el.classList.add('hide');
