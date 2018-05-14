@@ -125,14 +125,11 @@ blockquote > p:last-child {
 #finder {
     position: fixed;
     top: 0;
-    right: 0;
-    background-color: aliceblue;
-    color: darkblue;
-    box-shadow: 0 0 12px rgba(0, 0, 0, .2);
-    border-radius: 0 0 0 1em;
-    border-width: 0 0 3px 3px;
-    border-style: solid;
-    border-color: cornflowerblue;
+    right: 96px;
+    background-color: #F9F9F9;
+    box-shadow: 0 0 12px rgba(0, 0, 0, .4);
+    border: 3px solid black;
+    border-top-width: 0;
     padding: 6px;
     min-width: 30%;
     height: 50%;
@@ -148,21 +145,30 @@ blockquote > p:last-child {
     margin-bottom: 1em;
 }
 
+#finder input:focus {
+    outline: 1px solid black;
+}
+
 #finder a {
     padding: 3px 6px;
     text-decoration: none;
-    color: inherit;
+    color: black;
     display: block;
-    border-radius: 2px;
 }
 
 #finder .active, #finder a:hover {
-    background-color: cornflowerblue;
-    color: aliceblue;
+    background-color: #444;
+    color: white;
 }
 
 #finder .hl {
-    text-decoration: underline;
+    color: #D48900;
+    text-shadow: 0 0 1px #D48900;
+}
+
+#finder .active .hl, #finder a:hover .hl {
+    color: orange;
+    text-shadow: 0 0 1px orange;
 }
 
 .evaluated {
