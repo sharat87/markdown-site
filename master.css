@@ -232,8 +232,6 @@ pre .copy-btn {
     right: 0;
     top: 0;
     opacity: .7;
-    transform: scale(.8);
-    transform-origin: top right;
 }
 
 pre .copy-btn:hover {
