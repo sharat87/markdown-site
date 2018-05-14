@@ -88,6 +88,7 @@ class Compiler {
             return '<ol class=toc></ol>';
         const para = document.createElement('p');
         para.innerHTML = html.replace(/^note\b/i, '<span class=note>$&</span>');
+        Compiler.applyOrdinalIndicators(para);
         Compiler.applyAttrs(para);
         Compiler.symbolize(para);
         Compiler.applyPriority(para);
@@ -102,8 +103,33 @@ class Compiler {
         return li.outerHTML;
     }
 
+    static applyOrdinalIndicators(el) {
+        /* Not working!
+        for (const node of el.childNodes) {
+            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE') {
+                const html = node.textContent.replace(/(\d+)(st|nd|rd|th)/ig, '$1<sup>$2</sup>');
+                // const range = document.createRange();
+                // range.selectNode(node);
+                // const fragment = range.createContextualFragment('<div>' + html + '</div>');
+                // node.replaceWith(fragment);
+                // range.deleteContents();
+                // range.insertNode(fragment);
+                const dummy = el.cloneNode();
+                dummy.innerHTML = html;
+                const children = Array.from(dummy.childNodes);
+                console.log(children);
+                for (const child of children) {
+                    console.log(child);
+                    el.insertBefore(child, node);
+                }
+                node.remove();
+            }
+        }
+        //*/
+    }
+
     static applyAttrs(el) {
-        if (el.firstChild.nodeType !== Node.TEXT_NODE)
+        if (!el.firstChild || el.firstChild.nodeType !== Node.TEXT_NODE)
             return;
 
         const node = el.firstChild;
