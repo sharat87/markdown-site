@@ -246,6 +246,22 @@ pre .copy-btn:hover {
     text-decoration: underline;
 }
 
+h1 .link, h2 .link, h3 .link, h4 .link {
+    display: none;
+    text-decoration: none;
+    margin-left: .5em;
+    padding: 0 6px;
+    color: inherit;
+}
+
+h1:hover .link, h2:hover .link, h3:hover .link, h4:hover .link {
+    display: inline-block;
+}
+
+.link:hover {
+    background-color: #EEE;
+}
+
 @media print {
     body {
         border: none;

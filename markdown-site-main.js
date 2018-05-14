@@ -51,6 +51,7 @@ class Compiler {
         renderer.code = (text, lang) => Compiler.renderCode.call(renderer, text, lang, frontMatter);
         renderer.paragraph = Compiler.renderParagraph;
         renderer.listitem = Compiler.renderListItem;
+        renderer.heading = Compiler.renderHeading;
         return renderer;
     }
 
@@ -101,6 +102,16 @@ class Compiler {
         Compiler.applyPriority(li);
         Compiler.symbolize(li);
         return li.outerHTML;
+    }
+
+    static renderHeading(html, level, slug) {
+        const id = slug.toLowerCase().replace(/[^\w]+/g, '-');
+        const header = document.createElement('h' + level);
+        header.setAttribute('id', id);
+        const href = '#' + location.hash.split('#', 2)[1] + '#' + id;
+        header.innerHTML = '<span class=headline>' + html + '</span> <a href="' + href +
+            '" class=link title="Permalink to ' + slug + '">&para;</a>';
+        return header.outerHTML;
     }
 
     static applyOrdinalIndicators(el) {
@@ -361,7 +372,7 @@ class Loader {
     static load(url, el) {
         return fetch(url, {cache: 'no-cache'})
             .then((response) => Loader.onResponse(el, response))
-            .then(Loader.showPage).catch(Loader.onError);
+            .then(Loader.showPage)//.catch(Loader.onError);
     }
 
     static onResponse(el, response) {
@@ -372,10 +383,7 @@ class Loader {
                 Promise.resolve(response.headers),
             ]);
         } else {
-            return Promise.all([
-                Promise.resolve(el),
-                Promise.reject(response),
-            ]);
+            return Promise.reject([el, response]);
         }
     }
 
@@ -428,6 +436,7 @@ class Loader {
         for (const tableEl of el.getElementsByTagName('table'))
             new FancyTable(tableEl).apply();
 
+        // Table of Contents.
         const tocEl = el.querySelector('.toc');
         if (tocEl) {
             tocEl.innerHTML = 'Loading table of contents&hellip;';
@@ -450,7 +459,8 @@ class Loader {
                     markup.push('<ol>');
                 if (level < lastLevel)
                     markup.push('</ol>');
-                markup.push('<li><a href="#' + pagePrefix + head.id + '">' + head.innerHTML + '</a>');
+                markup.push('<li><a href="' + head.lastElementChild.getAttribute('href') + '">' +
+                    head.firstElementChild.innerHTML + '</a>');
                 lastLevel = level;
             }
 
