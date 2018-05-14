@@ -238,6 +238,10 @@ pre .copy-btn:hover {
     text-decoration: none;
 }
 
+.toc a:hover {
+    text-decoration: underline;
+}
+
 @media print {
     body {
         border: none;
