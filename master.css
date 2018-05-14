@@ -234,6 +234,10 @@ pre .copy-btn:hover {
     opacity: 1;
 }
 
+.toc a {
+    text-decoration: none;
+}
+
 @media print {
     body {
         border: none;

@@ -84,6 +84,8 @@ class Compiler {
     }
 
     static renderParagraph(html) {
+        if (html === '[TOC]')
+            return '<ol class=toc></ol>';
         const para = document.createElement('p');
         para.innerHTML = html.replace(/^note\b/i, '<span class=note>$&</span>');
         Compiler.applyAttrs(para);
@@ -388,8 +390,36 @@ class Loader {
             });
         }
 
-        for (const tableEl of el.getElementsByTagName('table')) {
+        for (const tableEl of el.getElementsByTagName('table'))
             new FancyTable(tableEl).apply();
+
+        const tocEl = el.querySelector('.toc');
+        if (tocEl) {
+            tocEl.innerHTML = 'Loading table of contents&hellip;';
+            const markup = [];
+            const pagePrefix = location.hash.substr(1).split('#', 1)[0] + '#';
+            let headers, minLevel;
+
+            if (el.querySelectorAll('h1').length === 1 && el.firstElementChild.tagName === 'H1') {
+                minLevel = 2;
+                headers = el.querySelectorAll('h2, h3');
+            } else {
+                minLevel = 1;
+                headers = el.querySelectorAll('h1, h2, h3');
+            }
+
+            let lastLevel = 0;
+            for (const head of headers) {
+                const level = parseInt(head.tagName.substr(1));
+                if (level > minLevel && level > lastLevel)
+                    markup.push('<ol>');
+                if (level < lastLevel)
+                    markup.push('</ol>');
+                markup.push('<li><a href="#' + pagePrefix + head.id + '">' + head.innerText + '</a>');
+                lastLevel = level;
+            }
+
+            tocEl.innerHTML = markup.join('\n');
         }
 
         return new Promise((resolve, reject) => {
