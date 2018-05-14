@@ -221,6 +221,7 @@ class Finder {
             if (this.searchInput.value) {
                 this.searchInput.value = '';
                 this.applyFilter();
+                this.searchInput.focus();
             } else {
                 this.el.classList.add('hide');
             }
