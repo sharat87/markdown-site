@@ -422,6 +422,10 @@ class Loader {
             tocEl.innerHTML = markup.join('\n');
         }
 
+        const autoFocusEl = el.querySelector('[autofocus]');
+        if (autoFocusEl)
+            autoFocusEl.focus();
+
         return new Promise((resolve, reject) => {
             Loader.evalEmbedded(el, frontMatter);
             App.updateTimeDisplays();
