@@ -25,24 +25,24 @@ const scriptPromises = [];
 script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js',
     script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'));
 script('https://unpkg.com/marked/marked.min.js');
+script('https://unpkg.com/showdown/dist/showdown.min.js');
 script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
 script('https://unpkg.com/mermaid/dist/mermaid.min.js');
 
 class Compiler {
     static compile(raw) {
-        let frontMatter = null;
-        if (raw.startsWith('{\n')) {
-            const endIndex = raw.indexOf('\n}\n');
-            frontMatter = JSON.parse(raw.substr(0, endIndex + 2));
-            raw = raw.substr(endIndex + 3);
-        }
+        const converter = new showdown.Converter({
+            metadata: true,
+            underline: true,
+            emoji: true,
+            tasklists: true,
+            strikethrough: true,
+            requireSpaceBeforeHeadingText: true,
+        });
 
         return {
-            frontMatter,
-            html: window.marked(raw, {
-                smartypants: true,
-                renderer: Compiler.makeRenderer(frontMatter),
-            }),
+            frontMatter: converter.getMetadata(),
+            html: converter.makeHtml(raw),
         };
     }
 
@@ -393,6 +393,7 @@ class Loader {
 
     static showPage([el, text, headers]) {
         const {frontMatter, html} = Compiler.compile(text);
+        console.log(html);
         el.innerHTML = html + '<div class=page-end><span>&#10087;</span></div>';
         const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
