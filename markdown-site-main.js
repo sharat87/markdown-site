@@ -115,7 +115,6 @@ class Compiler {
     }
 
     static applyOrdinalIndicators(el) {
-        /* Not working because the changes are being messed with by the other markup changes we're doing.
         for (const node of el.childNodes) {
             if (node.nodeType === Node.TEXT_NODE) {
                 const html = node.textContent.replace(/(\d+)(st|nd|rd|th)/ig, '$1<sup>$2</sup>');
@@ -127,7 +126,6 @@ class Compiler {
                 node.remove();
             }
         }
-        //*/
     }
 
     static applyAttrs(el) {
