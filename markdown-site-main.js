@@ -115,24 +115,15 @@ class Compiler {
     }
 
     static applyOrdinalIndicators(el) {
-        /* Not working!
+        /* Not working because the changes are being messed with by the other markup changes we're doing.
         for (const node of el.childNodes) {
-            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE') {
+            if (node.nodeType === Node.TEXT_NODE) {
                 const html = node.textContent.replace(/(\d+)(st|nd|rd|th)/ig, '$1<sup>$2</sup>');
-                // const range = document.createRange();
-                // range.selectNode(node);
-                // const fragment = range.createContextualFragment('<div>' + html + '</div>');
-                // node.replaceWith(fragment);
-                // range.deleteContents();
-                // range.insertNode(fragment);
                 const dummy = el.cloneNode();
                 dummy.innerHTML = html;
                 const children = Array.from(dummy.childNodes);
-                console.log(children);
-                for (const child of children) {
-                    console.log(child);
+                for (const child of children)
                     el.insertBefore(child, node);
-                }
                 node.remove();
             }
         }
