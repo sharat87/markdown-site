@@ -33,15 +33,27 @@ class Compiler {
     static compile(raw) {
         const converter = new showdown.Converter({
             metadata: true,
+            tables: true,
             underline: true,
             emoji: true,
             tasklists: true,
             strikethrough: true,
             requireSpaceBeforeHeadingText: true,
+            extensions: [Compiler.codeHighlighter],
         });
 
         const html = converter.makeHtml(raw);
         return {frontMatter: converter.getMetadata(), html};
+    }
+
+    static codeHighlighter() {
+        return {
+            type: 'output',
+            filter: (text, converter, options) => {
+                console.log('filter', text, converter, options);
+                return text;
+            }
+        }
     }
 
     static makeRenderer(frontMatter) {
