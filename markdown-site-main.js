@@ -40,10 +40,8 @@ class Compiler {
             requireSpaceBeforeHeadingText: true,
         });
 
-        return {
-            frontMatter: converter.getMetadata(),
-            html: converter.makeHtml(raw),
-        };
+        const html = converter.makeHtml(raw);
+        return {frontMatter: converter.getMetadata(), html};
     }
 
     static makeRenderer(frontMatter) {
