@@ -57,6 +57,9 @@ class Compiler {
         for (const codeEl of box.querySelectorAll('pre > code'))
             Compiler.highlightSyntax(codeEl, frontMatter);
 
+        for (const el of box.querySelectorAll('h1, h2, h3, h4'))
+            Compiler.addPermanentLinks(el);
+
         return {frontMatter, html: box.innerHTML};
     }
 
@@ -89,14 +92,12 @@ class Compiler {
             codeEl.innerHTML = window.hljs.highlight(lang, codeEl.innerText).value;
     }
 
-    static renderHeading(html, level, slug) {
-        const id = slug.toLowerCase().replace(/[^\w]+/g, '-');
-        const header = document.createElement('h' + level);
-        header.setAttribute('id', id);
+    static addPermanentLinks(el) {
+        const id = el.innerText.toLowerCase().replace(/[^\w]+/g, '-');
+        el.setAttribute('id', id);
         const href = '#' + location.hash.split('#', 2)[1] + '#' + id;
-        header.innerHTML = '<span class=headline>' + html + '</span> <a href="' + href +
-            '" class=link title="Permalink to ' + slug + '">&para;</a>';
-        return header.outerHTML;
+        el.innerHTML = '<span class=headline>' + el.innerHTML + '</span> <a href="' + href +
+            '" class=link title="Permalink to ' + el.innerText + '">&para;</a>';
     }
 
     static applyOrdinalIndicators(el) {
