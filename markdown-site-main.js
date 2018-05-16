@@ -48,6 +48,11 @@ class Compiler {
         const box = document.createElement('div');
         box.innerHTML = html;
         for (const el of box.querySelectorAll('p, td, li')) {
+            if (el.tagName === 'P' && el.textContent === '[TOC]') {
+                const toc = document.createElement('ol');
+                toc.classList.add('toc');
+                el.parentElement.replaceChild(toc, el);
+            }
             Compiler.symbolize(el);
             Compiler.applyPriority(el);
             Compiler.applyAttrs(el);
@@ -419,7 +424,7 @@ class Loader {
             new FancyTable(tableEl).apply();
 
         // Table of Contents.
-        const tocEl = el.querySelector('.toc');
+        const tocEl = el.querySelector('ol.toc');
         if (tocEl) {
             tocEl.innerHTML = 'Loading table of contents&hellip;';
             const markup = [];
