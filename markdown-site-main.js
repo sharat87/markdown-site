@@ -38,6 +38,8 @@ class Compiler {
             emoji: true,
             tasklists: true,
             strikethrough: true,
+            simplifiedAutoLink: true,
+            excludeTrailingPunctuationFromURLs: true,
             requireSpaceBeforeHeadingText: true,
             extensions: [Compiler.codeHighlighter],
         });
