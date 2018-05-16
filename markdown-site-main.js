@@ -486,7 +486,7 @@ class Loader {
     }
 
     static evalEmbedded(parent, frontMatter) {
-        for (const codeEl of parent.querySelectorAll('code.lang-javascript')) {
+        for (const codeEl of parent.querySelectorAll('code.language-javascript')) {
             const match = codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
             if (!match)
                 continue;
