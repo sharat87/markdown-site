@@ -53,7 +53,11 @@ class Compiler {
             Compiler.applyAttrs(el);
         }
 
-        return {frontMatter: converter.getMetadata(), html: box.innerHTML};
+        const frontMatter = converter.getMetadata();
+        for (const codeEl of box.querySelectorAll('pre > code'))
+            Compiler.highlightSyntax(codeEl, frontMatter);
+
+        return {frontMatter, html: box.innerHTML};
     }
 
     static codeHighlighter() {
@@ -75,33 +79,33 @@ class Compiler {
         return renderer;
     }
 
-    static renderCode(text, lang, frontMatter) {
-        if (!lang && text.startsWith(':::')) {
-            text = text.substr(3);
-            const index = text.indexOf('\n');
-            lang = text.substr(0, index);
-            text = text.substr(index + 1);
+    static highlightSyntax(codeEl, frontMatter) {
+        if (codeEl.classList.contains('language-math')) {
+            const repl = document.createElement('div');
+            repl.textContent = '[[[[[\n' + codeEl.textContent + '\n]]]]]';
+            const preEl = codeEl.parentElement;
+            preEl.parentElement.replaceChild(repl, preEl);
+        }
 
-        } else if (!lang && frontMatter) {
+        if (codeEl.classList.contains('language-mermaid')) {
+            const repl = document.createElement('div');
+            repl.classList.add('mermaid');
+            repl.textContent = codeEl.textContent;
+            const preEl = codeEl.parentElement;
+            preEl.parentElement.replaceChild(repl, preEl);
+        }
+
+        const match = codeEl.className.match(/\blanguage-(\w+)/);
+        if (!match)
+            return;
+
+        let lang = match[1];
+
+        if (!lang && frontMatter)
             lang = frontMatter.defaultLang;
 
-        }
-
-        if (lang === 'math')
-            return '<p>[[[[[' + text + ']]]]]</p>';
-
-        if (lang === 'mermaid')
-            return '<div class=mermaid>' + text + '</div>';
-
-        const pre = document.createElement('pre');
-        pre.innerHTML = '<code></code>';
-        if (lang && window.hljs.listLanguages().indexOf(lang) >= 0) {
-            pre.firstElementChild.classList.add(this.options.langPrefix + lang);
-            pre.firstElementChild.innerHTML = window.hljs.highlight(lang, text).value;
-        } else {
-            pre.firstElementChild.innerText = text;
-        }
-        return pre.outerHTML;
+        if (lang && window.hljs.getLanguage(lang))
+            codeEl.innerHTML = window.hljs.highlight(lang, codeEl.innerText).value;
     }
 
     static renderParagraph(html) {
@@ -233,7 +237,7 @@ class Finder {
     onKeyDown(event) {
         if (event.target !== this.searchInput) {
             if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
-                    !event.target.matches(UI_SELECTOR)) {
+                !event.target.matches(UI_SELECTOR)) {
                 if (event.key === 'f') {
                     event.preventDefault();
                     this.el.classList.remove('hide');
@@ -418,7 +422,6 @@ class Loader {
 
     static showPage([el, text, headers]) {
         const {frontMatter, html} = Compiler.compile(text);
-        console.log(html);
         el.innerHTML = html + '<div class=page-end><span>&#10087;</span></div>';
         const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
