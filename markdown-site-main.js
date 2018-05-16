@@ -87,13 +87,12 @@ class Compiler {
         }
 
         const match = codeEl.className.match(/\blanguage-(\w+)/);
-        if (!match)
-            return;
+        let lang = match ? match[1] : null;
 
-        let lang = match[1];
-
-        if (!lang && frontMatter)
+        if (!lang && frontMatter) {
             lang = frontMatter.defaultLang;
+            codeEl.classList.add(lang, 'language-' + lang);
+        }
 
         if (lang && window.hljs.getLanguage(lang))
             codeEl.innerHTML = window.hljs.highlight(lang, codeEl.innerText).value;
