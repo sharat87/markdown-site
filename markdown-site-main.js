@@ -41,11 +41,17 @@ class Compiler {
             simplifiedAutoLink: true,
             excludeTrailingPunctuationFromURLs: true,
             requireSpaceBeforeHeadingText: true,
-            extensions: [Compiler.codeHighlighter],
         });
 
         const html = converter.makeHtml(raw);
-        return {frontMatter: converter.getMetadata(), html};
+
+        const box = document.createElement('div');
+        box.innerHTML = html;
+        for (const el of box.querySelectorAll('p, td, li')) {
+            Compiler.symbolize(el);
+        }
+
+        return {frontMatter: converter.getMetadata(), html: box.innerHTML};
     }
 
     static codeHighlighter() {
@@ -169,8 +175,9 @@ class Compiler {
 
     static symbolize(el) {
         for (const node of el.childNodes) {
-            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE')
+            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE') {
                 node.textContent = node.textContent.replace(/->/g, '\u2192').replace(/<-/g, '\u2190');
+            }
         }
     }
 }
