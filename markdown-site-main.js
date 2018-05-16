@@ -103,8 +103,8 @@ class Compiler {
         const id = el.innerText.toLowerCase().replace(/[^\w]+/g, '-');
         el.setAttribute('id', id);
         const href = '#' + location.hash.split('#', 2)[1] + '#' + id;
-        el.innerHTML = '<span class=headline>' + el.innerHTML + '</span> <a href="' + href +
-            '" class=link title="Permalink to ' + el.innerText + '">&para;</a>';
+        el.innerHTML = `<span class=headline>${el.innerHTML}</span>` +
+            ` <a href="${href}" class=link title="Permalink to ${el.innerText}">&para;</a>`;
     }
 
     static applyOrdinalIndicators(el) {
@@ -169,9 +169,21 @@ class Compiler {
     }
 
     static symbolize(el) {
+        const repls = {
+            '<->': '\u2194',
+            '<-': '\u2190',
+            '->': '\u2192',
+            '<=': '\u21D0',
+            '=>': '\u21D2',
+            '---': '\u2014',
+            '--': '\u2013',
+        };
         for (const node of el.childNodes) {
             if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE') {
-                node.textContent = node.textContent.replace(/->/g, '\u2192').replace(/<-/g, '\u2190');
+                let text = node.textContent;
+                for (const [key, value] of Object.entries(repls))
+                    text = text.replace(new RegExp(key, 'g'), value);
+                node.textContent = text;
             }
         }
     }
