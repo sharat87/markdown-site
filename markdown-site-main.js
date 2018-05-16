@@ -49,6 +49,7 @@ class Compiler {
         box.innerHTML = html;
         for (const el of box.querySelectorAll('p, td, li')) {
             Compiler.symbolize(el);
+            Compiler.applyPriority(el);
         }
 
         return {frontMatter: converter.getMetadata(), html: box.innerHTML};
@@ -166,9 +167,10 @@ class Compiler {
     }
 
     static applyPriority(el) {
-        const match = el.innerHTML.match(/^!+\s*/);
+        const child = el.firstChild;
+        const match = child.textContent.match(/^!+\s*/);
         if (match) {
-            el.innerHTML = el.innerHTML.substr(match[0].length);
+            child.textContent = child.textContent.substr(match[0].length);
             el.classList.add('highlight-' + match[0].trim().length);
         }
     }
