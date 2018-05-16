@@ -198,7 +198,7 @@ class Finder {
         this.listing = this.el.querySelector('.listing');
         this.activeLink = this.prevNeedle = null;
 
-        document.body.addEventListener('keydown', this.onKeyDown.bind(this));
+        this.searchInput.addEventListener('keydown', this.onKeyDown.bind(this));
 
         // Detect the `X` button click in the search input.
         this.searchInput.addEventListener('click', (event) => {
@@ -210,7 +210,7 @@ class Finder {
 
         this.el.addEventListener('click', (event) => {
             if (event.target.tagName === 'A')
-                this.el.classList.add('hide');
+                this.hide();
         });
     }
 
@@ -231,40 +231,29 @@ class Finder {
             });
     }
 
+    show() {
+        this.el.classList.remove('hide');
+        this.searchInput.focus();
+        this.searchInput.value = '';
+        this.applyFilter();
+    }
+
+    hide() {
+        this.el.classList.add('hide');
+    }
+
     onKeyDown(event) {
-        if (event.target !== this.searchInput) {
-            if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
-                !event.target.matches(UI_SELECTOR)) {
-                if (event.key === 'f') {
-                    event.preventDefault();
-                    this.el.classList.remove('hide');
-                    this.searchInput.focus();
-                    this.searchInput.value = '';
-                    this.applyFilter();
-                }
-
-                if (event.key === 'r') {
-                    // FIXME: Think of a better API to reload the page.
-                    mainEl.dataset.page = '';
-                    App.onHashChange();
-                }
-            }
-
-            return;
-        }
-
         if (event.key === 'Escape') {
             if (this.searchInput.value) {
                 this.searchInput.value = '';
                 this.applyFilter();
                 this.searchInput.focus();
             } else {
-                this.el.classList.add('hide');
+                this.hide();
             }
 
         } else if (event.key === 'Enter') {
             this.activeLink.click();
-            this.el.classList.add('hide');
 
         } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
             const direction = event.key === 'ArrowUp' ? 'previous' : 'next',
@@ -659,6 +648,27 @@ class App {
             .finally(LoadingOSD.hide.bind(LoadingOSD));
     }
 
+    static onKeyDown(event) {
+        if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
+            !event.target.matches(UI_SELECTOR)) {
+
+            if (event.key === 'Escape') {
+                App.pageFinder.hide();
+            }
+
+            if (event.key === 'f') {
+                event.preventDefault();
+                App.pageFinder.show();
+            }
+
+            if (event.key === 'r') {
+                // FIXME: Think of a better API to reload the page.
+                mainEl.dataset.page = '';
+                App.onHashChange();
+            }
+        }
+    }
+
     static updateTimeDisplays() {
         for (const timeEl of document.querySelectorAll('time[datetime]')) {
             const time = new Date(timeEl.dateTime);
@@ -695,13 +705,15 @@ class App {
     }
 
     static main() {
+        App.pageFinder = new Finder(document.getElementById('finder'));
+        App.pageFinder.load('pages.txt');
+
+        document.body.addEventListener('keydown', App.onKeyDown);
         window.addEventListener('hashchange', App.onHashChange);
         App.onHashChange();
 
         setInterval(App.updateTimeDisplays, 60000);
         App.updateTimeDisplays();
-
-        new Finder(document.getElementById('finder')).load('pages.txt');
     }
 }
 
