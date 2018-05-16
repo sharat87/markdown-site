@@ -60,25 +60,6 @@ class Compiler {
         return {frontMatter, html: box.innerHTML};
     }
 
-    static codeHighlighter() {
-        return {
-            type: 'output',
-            filter: (text, converter, options) => {
-                console.log('filter', text, converter, options);
-                return text;
-            }
-        }
-    }
-
-    static makeRenderer(frontMatter) {
-        const renderer = new marked.Renderer();
-        renderer.code = (text, lang) => Compiler.renderCode.call(renderer, text, lang, frontMatter);
-        renderer.paragraph = Compiler.renderParagraph;
-        renderer.listitem = Compiler.renderListItem;
-        renderer.heading = Compiler.renderHeading;
-        return renderer;
-    }
-
     static highlightSyntax(codeEl, frontMatter) {
         if (codeEl.classList.contains('language-math')) {
             const repl = document.createElement('div');
@@ -106,26 +87,6 @@ class Compiler {
 
         if (lang && window.hljs.getLanguage(lang))
             codeEl.innerHTML = window.hljs.highlight(lang, codeEl.innerText).value;
-    }
-
-    static renderParagraph(html) {
-        if (html === '[TOC]')
-            return '<ol class=toc></ol>';
-        const para = document.createElement('p');
-        para.innerHTML = html.replace(/^note\b/i, '<span class=note>$&</span>');
-        Compiler.applyOrdinalIndicators(para);
-        Compiler.applyAttrs(para);
-        Compiler.symbolize(para);
-        Compiler.applyPriority(para);
-        return para.outerHTML;
-    }
-
-    static renderListItem(html) {
-        const li = document.createElement('li');
-        li.innerHTML = html;
-        Compiler.applyPriority(li);
-        Compiler.symbolize(li);
-        return li.outerHTML;
     }
 
     static renderHeading(html, level, slug) {
