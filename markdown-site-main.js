@@ -50,6 +50,7 @@ class Compiler {
         for (const el of box.querySelectorAll('p, td, li')) {
             Compiler.symbolize(el);
             Compiler.applyPriority(el);
+            Compiler.applyAttrs(el);
         }
 
         return {frontMatter: converter.getMetadata(), html: box.innerHTML};
@@ -150,13 +151,13 @@ class Compiler {
     }
 
     static applyAttrs(el) {
-        if (!el.firstChild || el.firstChild.nodeType !== Node.TEXT_NODE)
+        const child = el.firstChild;
+        if (!child || child.nodeType !== Node.TEXT_NODE)
             return;
 
-        const node = el.firstChild;
-        const match = node.textContent.match(/^{([-.#\w]+?)}\s*/);
+        const match = child.textContent.match(/^{([-.#\w]+?)}\s*/);
         if (match) {
-            node.textContent = node.textContent.substr(match[0].length);
+            child.textContent = child.textContent.substr(match[0].length);
             for (const attr of match[1].match(/[.#][-\w]+/g)) {
                 if (attr.startsWith('.'))
                     el.classList.add(attr.substr(1));
@@ -168,6 +169,9 @@ class Compiler {
 
     static applyPriority(el) {
         const child = el.firstChild;
+        if (!child || child.nodeType !== Node.TEXT_NODE)
+            return;
+
         const match = child.textContent.match(/^!+\s*/);
         if (match) {
             child.textContent = child.textContent.substr(match[0].length);
