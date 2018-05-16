@@ -52,10 +52,12 @@ class Compiler {
                 const toc = document.createElement('ol');
                 toc.classList.add('toc');
                 el.parentElement.replaceChild(toc, el);
+            } else {
+                Compiler.symbolize(el);
+                Compiler.applyPriority(el);
+                Compiler.applyAttrs(el);
+                Compiler.applyOrdinalIndicators(el);
             }
-            Compiler.symbolize(el);
-            Compiler.applyPriority(el);
-            Compiler.applyAttrs(el);
         }
 
         const frontMatter = converter.getMetadata();
@@ -106,19 +108,35 @@ class Compiler {
     }
 
     static applyOrdinalIndicators(el) {
-        /* Not working because the changes are being messed with by the other markup changes we're doing.
-        for (const node of el.childNodes) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                const html = node.textContent.replace(/(\d+)(st|nd|rd|th)/ig, '$1<sup>$2</sup>');
-                const dummy = el.cloneNode();
-                dummy.innerHTML = html;
-                const children = Array.from(dummy.childNodes);
-                for (const child of children)
-                    el.insertBefore(child, node);
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {acceptNode});
+
+        function acceptNode(node) {
+            let parent = node;
+            while ((parent = parent.parentElement) && parent !== el)
+                if (parent.tagName === 'CODE')
+                    return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+        }
+
+        while (walker.nextNode()) {
+            const node = walker.currentNode;
+            const parent = node.parentElement;
+
+            let text = node.textContent, hasMatch = false, match;
+            while (match = text.match(/(\d+)(st|nd|rd|th)/i)) {
+                hasMatch = true;
+                parent.insertBefore(document.createTextNode(text.substr(0, match.index + match[1].length)), node);
+                const indicator = document.createElement('sup');
+                indicator.innerText = match[2];
+                parent.insertBefore(indicator, node);
+                text = text.substr(match.index + match.length);
+            }
+
+            if (hasMatch) {
+                parent.insertBefore(document.createTextNode(text), node);
                 node.remove();
             }
         }
-        //*/
     }
 
     static applyAttrs(el) {
