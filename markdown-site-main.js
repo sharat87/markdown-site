@@ -189,17 +189,17 @@ class Compiler {
 }
 
 class Finder {
-    constructor() {
+    constructor(title) {
         this.el = document.createElement('div');
         this.el.className = 'finder hide';
-        this.el.innerHTML = '<input type="search" placeholder="Type to filter&hellip;">' +
+        this.el.innerHTML = (title ? `<h2>${title}</h2>` : '') + '<input type="search" placeholder="Type to filter&hellip;">' +
             ' <div class="listing"></div>';
         document.body.appendChild(this.el);
 
         this.dex = [];
         this.searchInput = this.el.querySelector('input');
         this.listing = this.el.querySelector('.listing');
-        this.activeLink = this.prevNeedle = null;
+        this._activeLink = this.prevNeedle = null;
 
         this.searchInput.addEventListener('keydown', this.onKeyDown.bind(this));
 
@@ -247,6 +247,24 @@ class Finder {
         this.el.classList.add('hide');
     }
 
+    get activeLink() {
+        return this._activeLink;
+    }
+
+    set activeLink(link) {
+        if (this._activeLink)
+            this._activeLink.classList.remove('active');
+
+        this._activeLink = link;
+
+        if (this._activeLink) {
+            this._activeLink.classList.add('active');
+            const maxScrollTop = this._activeLink.offsetTop,
+                minScrollTop = this._activeLink.offsetTop + this._activeLink.clientHeight - this.el.clientHeight;
+            this.el.scrollTop = Math.min(maxScrollTop, Math.max(minScrollTop, this.el.scrollTop));
+        }
+    }
+
     onKeyDown(event) {
         if (event.key === 'Escape') {
             if (this.searchInput.value) {
@@ -258,16 +276,16 @@ class Finder {
             }
 
         } else if (event.key === 'Enter') {
-            this.activeLink.click();
+            this._activeLink.click();
 
         } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
             const direction = event.key === 'ArrowUp' ? 'previous' : 'next',
-                siblingProp = direction + 'ElementSibling';
-            if (this.activeLink[siblingProp]) {
-                this.activeLink.classList.remove('active');
-                this.activeLink = this.activeLink[siblingProp];
-                this.activeLink.classList.add('active');
-            }
+                siblingProp = direction + 'ElementSibling',
+                sibling = this._activeLink[siblingProp];
+            if (sibling)
+                this.activeLink = sibling;
+            else if (event.key === 'ArrowUp')
+                this.el.scrollTop = 0;
 
         } else {
             setTimeout(() => this.applyFilter());
@@ -281,9 +299,6 @@ class Finder {
             return;
 
         this.listing.innerHTML = '<em>Searching&hellip;</em>';
-        const links = this.listing.querySelectorAll('a');
-        if (this.activeLink)
-            this.activeLink.classList.remove('active');
         this.activeLink = null;
 
         const matches = [];
@@ -301,8 +316,6 @@ class Finder {
         this.listing.innerHTML = markup.join('');
 
         this.activeLink = this.listing.firstElementChild;
-        if (this.activeLink)
-            this.activeLink.classList.add('active');
 
         this.prevNeedle = needle;
     }
@@ -710,7 +723,7 @@ class App {
     }
 
     static main() {
-        App.pageFinder = new Finder();
+        App.pageFinder = new Finder('Find page');
         App.pageFinder.load('pages.txt');
 
         document.body.addEventListener('keydown', App.onKeyDown);

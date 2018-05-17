@@ -137,6 +137,10 @@ blockquote > p:last-child {
     overflow-y: auto;
 }
 
+.finder h2 {
+    margin: 0;
+}
+
 .finder input {
     border-width: 0 0 1px 0;
     border-color: black;
