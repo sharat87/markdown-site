@@ -21,10 +21,12 @@ The markdown to HTML compilation happens in the browser and navigation is done u
 
 This project uses the following libraries:
 
-1. Markdown compiler -> [showdown](http://www.showdownjs.com/).
-2. Syntax highlighter -> [highlight.js](https://highlightjs.org).
-3. Math renderer -> [MathJax](https://www.mathjax.org).
-4. Flowchart rendering -> [mermaid](https://mermaidjs.github.io).
+| Component           | Homepage                                |
+| ------------------- | --------------------------------------- |
+| Markdown compiler   | [showdown](http://www.showdownjs.com/)  |
+| Syntax highlighter  | [highlight.js](https://highlightjs.org) |
+| Math renderer       | [MathJax](https://www.mathjax.org)      |
+| Flowchart rendering | [mermaid](https://mermaidjs.github.io)  |
 
 ## Contribute
 
