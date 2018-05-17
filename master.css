@@ -55,7 +55,7 @@ article > h1:first-child {
 
 pre {
     padding: 3px;
-    margin-left: 2em;
+    margin: 0 0 0 2em;
     background-color: rgba(0, 0, 0, .02);
     overflow-x: auto;
     position: relative;
@@ -231,14 +231,18 @@ h1 + .page-desc {
     padding: 0 1em;
 }
 
-pre .copy-btn {
+.pre-code-box {
+    position: relative;
+}
+
+.pre-code-box button {
+    opacity: .7;
     position: absolute;
     right: 0;
     top: 0;
-    opacity: .7;
 }
 
-pre .copy-btn:hover {
+.pre-code-box button:hover {
     opacity: 1;
 }
 

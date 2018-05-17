@@ -451,10 +451,10 @@ class Loader {
                 e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
 
         for (const codeEl of el.querySelectorAll('pre > code')) {
-            codeEl.insertAdjacentHTML('beforebegin', '<button class=copy-btn type=button>Copy</button>');
-            codeEl.previousElementSibling.addEventListener('click', (event) => {
-                navigator.clipboard.writeText(codeEl.innerText);
-            });
+            const preEl = codeEl.parentElement;
+            preEl.insertAdjacentHTML('beforebegin', '<div class=pre-code-box> <button type=button>Copy</button> </div>');
+            preEl.previousElementSibling.insertAdjacentElement('afterbegin', preEl);
+            preEl.nextElementSibling.addEventListener('click', () => navigator.clipboard.writeText(codeEl.innerText));
         }
 
         for (const tableEl of el.getElementsByTagName('table'))
