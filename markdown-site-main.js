@@ -189,8 +189,12 @@ class Compiler {
 }
 
 class Finder {
-    constructor(el) {
-        this.el = el;
+    constructor() {
+        this.el = document.createElement('div');
+        this.el.className = 'finder hide';
+        this.el.innerHTML = '<input type="search" placeholder="Type to filter&hellip;">' +
+            ' <div class="listing"></div>';
+        document.body.appendChild(this.el);
 
         this.pages = [];
         this.searchInput = this.el.querySelector('input');
@@ -704,7 +708,7 @@ class App {
     }
 
     static main() {
-        App.pageFinder = new Finder(document.getElementById('finder'));
+        App.pageFinder = new Finder();
         App.pageFinder.load('pages.txt');
 
         document.body.addEventListener('keydown', App.onKeyDown);
@@ -718,11 +722,6 @@ class App {
 
 document.body.insertAdjacentHTML('afterbegin', `
     <article id=main></article>
-    <div id="finder" class="hide">
-        <input type="search" placeholder="Type to filter&hellip;">
-        <div class="listing"></div>
-    </div>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
 `);
 
