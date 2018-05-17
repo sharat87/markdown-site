@@ -128,7 +128,7 @@ class Compiler {
                 const indicator = document.createElement('sup');
                 indicator.innerText = match[2];
                 parent.insertBefore(indicator, node);
-                text = text.substr(match.index + match.length);
+                text = text.substr(match.index + match[1].length + match[2].length);
             }
 
             if (hasMatch) {
