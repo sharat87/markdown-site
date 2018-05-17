@@ -677,28 +677,29 @@ class App {
     }
 
     static onKeyDown(event) {
-        if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
-            !event.target.matches(UI_SELECTOR)) {
+        if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.target.matches(UI_SELECTOR)) {
 
             if (event.key === 'Escape') {
                 App.pageFinder.hide();
                 App.outlineFinder.hide();
-            }
+                document.getElementById('helpBox').classList.add('hide');
 
-            if (event.key === 'f') {
+            } else if (event.key === 'f') {
                 event.preventDefault();
                 App.pageFinder.show();
-            }
 
-            if (event.key === 's') {
+            } else if (event.key === 's') {
                 event.preventDefault();
                 App.outlineFinder.show();
-            }
 
-            if (event.key === 'r') {
+            } else if (event.key === 'r') {
                 // FIXME: Think of a better API to reload the page.
                 mainEl.dataset.page = '';
                 App.onHashChange();
+
+            } else if (event.key === '?') {
+                document.getElementById('helpBox').classList.remove('hide');
+
             }
         }
     }
@@ -755,6 +756,28 @@ class App {
 
 document.body.insertAdjacentHTML('afterbegin', `
     <article id=main></article>
+    <div id="helpBox" class="hide overlay">
+        <h2>Hotkeys</h2>
+        <table>
+            <tr>
+                <th>f</th>
+                <td>Open page finder.</td>
+            </tr>
+            <tr>
+                <th>s</th>
+                <td>Open header finder.</td>
+            </tr>
+            <tr>
+                <th>r</th>
+                <td>Reload current page.</td>
+            </tr>
+            <tr>
+                <th>ESC</th>
+                <td>Close any finder or overlay.</td>
+            </tr>
+        </table>
+        <p><em>Hit Escape to close.</em></p>
+    </div>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
 `);
 
