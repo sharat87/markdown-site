@@ -454,7 +454,7 @@ class Loader {
             const preEl = codeEl.parentElement;
             preEl.insertAdjacentHTML('beforebegin', '<div class=pre-code-box> <button type=button>Copy</button> </div>');
             preEl.previousElementSibling.insertAdjacentElement('afterbegin', preEl);
-            preEl.nextElementSibling.addEventListener('click', () => navigator.clipboard.writeText(codeEl.innerText));
+            preEl.nextElementSibling.addEventListener('click', () => navigator.clipboard.writeText(codeEl.innerText.trim()));
         }
 
         for (const tableEl of el.getElementsByTagName('table'))
@@ -533,8 +533,9 @@ class Loader {
             p.remove();
             this.preEl.style.display = '';
         });
-        this.preEl.insertAdjacentElement('afterend', p);
-        this.preEl.style.display = 'none';
+        const box = this.preEl.closest('.pre-code-box') || this.preEl;
+        box.insertAdjacentElement('afterend', p);
+        box.style.display = 'none';
     }
 }
 
@@ -669,8 +670,8 @@ class App {
                         hash: header.querySelector('a').getAttribute('href').substr(1),
                     });
                 }
-                this.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
-                this.outlineFinder.applyFilter();
+                App.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
+                App.outlineFinder.applyFilter();
             })
             .finally(LoadingOSD.hide.bind(LoadingOSD));
     }
