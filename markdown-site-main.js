@@ -331,10 +331,10 @@ class Finder {
         if (needle === '')
             return {score: 1, hlMarkup: haystack};
 
-        haystack = haystack.toLowerCase();
+        const haystackLower = haystack.toLowerCase();
         let i = 0, j = 0;
         const needleLen = needle.length;
-        const haystackLen = haystack.length;
+        const haystackLen = haystackLower.length;
         let jLastMatched = 0, score = 0;
 
         const matchedHaystack = [];
@@ -343,7 +343,7 @@ class Finder {
 
         while (i < needleLen && j < haystackLen) {
             const nc = needle[i];
-            const hc = haystack[j];
+            const hc = haystackLower[j];
 
             if (nc === hc) {
                 score += 10;
@@ -352,7 +352,7 @@ class Finder {
                     score += 40;
                 //score = score - (4 * (i - jLastMatched - 1)) // See graph of `y=4(x-1)`.
 
-                if (j === 0 || haystack[j - 1] === ' ') {
+                if (j === 0 || haystackLower[j - 1] === ' ') {
                     score += 10;
                     if (i === 0)
                         score += 25;
@@ -374,12 +374,12 @@ class Finder {
 
             }
 
-            matchedHaystack.push(hc);
+            matchedHaystack.push(haystack[j]);
             ++j;
         }
 
         if (i < needleLen)
-            return {score: 0, hlMarkup: haystack};
+            return {score: 0, hlMarkup: haystackLower};
 
         // All else being same, smaller haystacks should score more.
         score += Math.ceil(20 * needleLen / haystackLen);
@@ -662,6 +662,15 @@ class App {
                 if (jump)
                     mainEl.querySelector('#' + jump).scrollIntoView();
                 mainEl.dataset.page = page;
+                App.outlineFinder.dex.splice(0, App.outlineFinder.dex.length);
+                for (const header of mainEl.querySelectorAll('h1, h2, h3, h4')) {
+                    App.outlineFinder.dex.push({
+                        text: header.querySelector('span').innerText,
+                        hash: header.querySelector('a').getAttribute('href').substr(1),
+                    });
+                }
+                this.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
+                this.outlineFinder.applyFilter();
             })
             .finally(LoadingOSD.hide.bind(LoadingOSD));
     }
@@ -672,11 +681,17 @@ class App {
 
             if (event.key === 'Escape') {
                 App.pageFinder.hide();
+                App.outlineFinder.hide();
             }
 
             if (event.key === 'f') {
                 event.preventDefault();
                 App.pageFinder.show();
+            }
+
+            if (event.key === 's') {
+                event.preventDefault();
+                App.outlineFinder.show();
             }
 
             if (event.key === 'r') {
@@ -725,6 +740,8 @@ class App {
     static main() {
         App.pageFinder = new Finder('Find page');
         App.pageFinder.load('pages.txt');
+
+        App.outlineFinder = new Finder('Go to header');
 
         document.body.addEventListener('keydown', App.onKeyDown);
         window.addEventListener('hashchange', App.onHashChange);
