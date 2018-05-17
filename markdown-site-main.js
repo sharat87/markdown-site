@@ -196,7 +196,7 @@ class Finder {
             ' <div class="listing"></div>';
         document.body.appendChild(this.el);
 
-        this.pages = [];
+        this.dex = [];
         this.searchInput = this.el.querySelector('input');
         this.listing = this.el.querySelector('.listing');
         this.activeLink = this.prevNeedle = null;
@@ -223,14 +223,16 @@ class Finder {
         fetch(this.pagesUrl)
             .then((response) => response.ok ? response.text() : Promise.reject(response))
             .then((text) => {
-                this.pages.splice(0, this.pages.length);
-                for (let page of text.trim().split('\n'))
-                    this.pages.push(page.replace(/^\.\//, ''));
-                this.pages.sort();
+                this.dex.splice(0, this.dex.length);
+                for (let page of text.trim().split('\n')) {
+                    const hash = page.replace(/^\.\//, '');
+                    this.dex.push({hash, text: hash});
+                }
+                this.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
                 this.applyFilter();
             })
             .catch((response) => {
-                console.warn('Could not load pages from `' + pagesUrl + '`.', response);
+                console.warn('Could not load dex from `' + pagesUrl + '`.', response);
             });
     }
 
@@ -286,16 +288,16 @@ class Finder {
 
         const matches = [];
 
-        for (let page of this.pages) {
-            const {score, hlMarkup} = Finder.checkMatch(page, needle);
+        for (const {text, hash} of this.dex) {
+            const {score, hlMarkup} = Finder.checkMatch(text, needle);
             if (score)
-                matches.push({score, page, hlMarkup});
+                matches.push({score, hash, hlMarkup});
         }
         matches.sort((a, b) => b.score - a.score);
 
         const markup = [];
-        for (const {page, hlMarkup} of matches)
-            markup.push('<a href="#', page, '">', hlMarkup, '</a>\n');
+        for (const {hash, hlMarkup} of matches)
+            markup.push('<a href="#', hash, '">', hlMarkup, '</a>\n');
         this.listing.innerHTML = markup.join('');
 
         this.activeLink = this.listing.firstElementChild;
