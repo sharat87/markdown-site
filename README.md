@@ -17,10 +17,6 @@ If you did step 3, you can hit `f` to open a finder popup that supports fuzzy se
 
 The markdown to HTML compilation happens in the browser and navigation is done using hash-change events.
 
-## License
-
-MIT License.
-
 ## Thanks
 
 This project uses the following libraries:
