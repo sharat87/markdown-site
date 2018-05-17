@@ -25,117 +25,127 @@ const scriptPromises = [];
 script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js',
     script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'));
 script('https://unpkg.com/marked/marked.min.js');
+script('https://unpkg.com/showdown/dist/showdown.min.js');
 script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
 script('https://unpkg.com/mermaid/dist/mermaid.min.js');
 
 class Compiler {
     static compile(raw) {
-        let frontMatter = null;
-        if (raw.startsWith('{\n')) {
-            const endIndex = raw.indexOf('\n}\n');
-            frontMatter = JSON.parse(raw.substr(0, endIndex + 2));
-            raw = raw.substr(endIndex + 3);
+        const converter = new showdown.Converter({
+            metadata: true,
+            tables: true,
+            underline: true,
+            emoji: true,
+            tasklists: true,
+            strikethrough: true,
+            simplifiedAutoLink: true,
+            excludeTrailingPunctuationFromURLs: true,
+            requireSpaceBeforeHeadingText: true,
+        });
+
+        const html = converter.makeHtml(raw);
+
+        const box = document.createElement('div');
+        box.innerHTML = html;
+        for (const el of box.querySelectorAll('p, td, li')) {
+            if (el.tagName === 'P' && el.textContent === '[TOC]') {
+                const toc = document.createElement('ol');
+                toc.classList.add('toc');
+                el.parentElement.replaceChild(toc, el);
+            } else {
+                Compiler.symbolize(el);
+                Compiler.applyPriority(el);
+                Compiler.applyAttrs(el);
+                Compiler.applyOrdinalIndicators(el);
+            }
         }
 
-        return {
-            frontMatter,
-            html: window.marked(raw, {
-                smartypants: true,
-                renderer: Compiler.makeRenderer(frontMatter),
-            }),
-        };
+        const frontMatter = converter.getMetadata();
+        for (const codeEl of box.querySelectorAll('pre > code'))
+            Compiler.highlightSyntax(codeEl, frontMatter);
+
+        for (const el of box.querySelectorAll('h1, h2, h3, h4'))
+            Compiler.addPermanentLinks(el);
+
+        return {frontMatter, html: box.innerHTML};
     }
 
-    static makeRenderer(frontMatter) {
-        const renderer = new marked.Renderer();
-        renderer.code = (text, lang) => Compiler.renderCode.call(renderer, text, lang, frontMatter);
-        renderer.paragraph = Compiler.renderParagraph;
-        renderer.listitem = Compiler.renderListItem;
-        renderer.heading = Compiler.renderHeading;
-        return renderer;
-    }
+    static highlightSyntax(codeEl, frontMatter) {
+        if (codeEl.classList.contains('language-math')) {
+            const repl = document.createElement('div');
+            repl.textContent = '[[[[[\n' + codeEl.textContent + '\n]]]]]';
+            const preEl = codeEl.parentElement;
+            preEl.parentElement.replaceChild(repl, preEl);
+        }
 
-    static renderCode(text, lang, frontMatter) {
-        if (!lang && text.startsWith(':::')) {
-            text = text.substr(3);
-            const index = text.indexOf('\n');
-            lang = text.substr(0, index);
-            text = text.substr(index + 1);
+        if (codeEl.classList.contains('language-mermaid')) {
+            const repl = document.createElement('div');
+            repl.classList.add('mermaid');
+            repl.textContent = codeEl.textContent;
+            const preEl = codeEl.parentElement;
+            preEl.parentElement.replaceChild(repl, preEl);
+        }
 
-        } else if (!lang && frontMatter) {
+        const match = codeEl.className.match(/\blanguage-(\w+)/);
+        let lang = match ? match[1] : null;
+
+        if (!lang && frontMatter) {
             lang = frontMatter.defaultLang;
-
+            codeEl.classList.add(lang, 'language-' + lang);
         }
 
-        if (lang === 'math')
-            return '<p>[[[[[' + text + ']]]]]</p>';
-
-        if (lang === 'mermaid')
-            return '<div class=mermaid>' + text + '</div>';
-
-        const pre = document.createElement('pre');
-        pre.innerHTML = '<code></code>';
-        if (lang && window.hljs.listLanguages().indexOf(lang) >= 0) {
-            pre.firstElementChild.classList.add(this.options.langPrefix + lang);
-            pre.firstElementChild.innerHTML = window.hljs.highlight(lang, text).value;
-        } else {
-            pre.firstElementChild.innerText = text;
-        }
-        return pre.outerHTML;
+        if (lang && window.hljs.getLanguage(lang))
+            codeEl.innerHTML = window.hljs.highlight(lang, codeEl.innerText).value;
     }
 
-    static renderParagraph(html) {
-        if (html === '[TOC]')
-            return '<ol class=toc></ol>';
-        const para = document.createElement('p');
-        para.innerHTML = html.replace(/^note\b/i, '<span class=note>$&</span>');
-        Compiler.applyOrdinalIndicators(para);
-        Compiler.applyAttrs(para);
-        Compiler.symbolize(para);
-        Compiler.applyPriority(para);
-        return para.outerHTML;
-    }
-
-    static renderListItem(html) {
-        const li = document.createElement('li');
-        li.innerHTML = html;
-        Compiler.applyPriority(li);
-        Compiler.symbolize(li);
-        return li.outerHTML;
-    }
-
-    static renderHeading(html, level, slug) {
-        const id = slug.toLowerCase().replace(/[^\w]+/g, '-');
-        const header = document.createElement('h' + level);
-        header.setAttribute('id', id);
+    static addPermanentLinks(el) {
+        const id = el.innerText.toLowerCase().replace(/[^\w]+/g, '-');
+        el.setAttribute('id', id);
         const href = '#' + location.hash.split('#', 2)[1] + '#' + id;
-        header.innerHTML = '<span class=headline>' + html + '</span> <a href="' + href +
-            '" class=link title="Permalink to ' + slug + '">&para;</a>';
-        return header.outerHTML;
+        el.innerHTML = `<span class=headline>${el.innerHTML}</span>` +
+            ` <a href="${href}" class=link title="Permalink to ${el.innerText}">&para;</a>`;
     }
 
     static applyOrdinalIndicators(el) {
-        for (const node of el.childNodes) {
-            if (node.nodeType === Node.TEXT_NODE) {
-                const html = node.textContent.replace(/(\d+)(st|nd|rd|th)/ig, '$1<sup>$2</sup>');
-                const dummy = el.cloneNode();
-                dummy.innerHTML = html;
-                const children = Array.from(dummy.childNodes);
-                for (const child of children)
-                    el.insertBefore(child, node);
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {acceptNode});
+
+        function acceptNode(node) {
+            let parent = node;
+            while ((parent = parent.parentElement) && parent !== el)
+                if (parent.tagName === 'CODE')
+                    return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+        }
+
+        while (walker.nextNode()) {
+            const node = walker.currentNode;
+            const parent = node.parentElement;
+
+            let text = node.textContent, hasMatch = false, match;
+            while (match = text.match(/(\d+)(st|nd|rd|th)/i)) {
+                hasMatch = true;
+                parent.insertBefore(document.createTextNode(text.substr(0, match.index + match[1].length)), node);
+                const indicator = document.createElement('sup');
+                indicator.innerText = match[2];
+                parent.insertBefore(indicator, node);
+                text = text.substr(match.index + match.length);
+            }
+
+            if (hasMatch) {
+                parent.insertBefore(document.createTextNode(text), node);
                 node.remove();
             }
         }
     }
 
     static applyAttrs(el) {
-        if (!el.firstChild || el.firstChild.nodeType !== Node.TEXT_NODE)
+        const child = el.firstChild;
+        if (!child || child.nodeType !== Node.TEXT_NODE)
             return;
 
-        const node = el.firstChild;
-        const match = node.textContent.match(/^{([-.#\w]+?)}\s*/);
+        const match = child.textContent.match(/^{([-.#\w]+?)}\s*/);
         if (match) {
-            node.textContent = node.textContent.substr(match[0].length);
+            child.textContent = child.textContent.substr(match[0].length);
             for (const attr of match[1].match(/[.#][-\w]+/g)) {
                 if (attr.startsWith('.'))
                     el.classList.add(attr.substr(1));
@@ -146,31 +156,52 @@ class Compiler {
     }
 
     static applyPriority(el) {
-        const match = el.innerHTML.match(/^!+\s*/);
+        const child = el.firstChild;
+        if (!child || child.nodeType !== Node.TEXT_NODE)
+            return;
+
+        const match = child.textContent.match(/^!+\s*/);
         if (match) {
-            el.innerHTML = el.innerHTML.substr(match[0].length);
+            child.textContent = child.textContent.substr(match[0].length);
             el.classList.add('highlight-' + match[0].trim().length);
         }
     }
 
     static symbolize(el) {
+        const repls = {
+            '<->': '\u2194',
+            '<-': '\u2190',
+            '->': '\u2192',
+            '<=': '\u21D0',
+            '=>': '\u21D2',
+            '---': '\u2014',
+            '--': '\u2013',
+        };
         for (const node of el.childNodes) {
-            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE')
-                node.textContent = node.textContent.replace(/->/g, '\u2192').replace(/<-/g, '\u2190');
+            if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE') {
+                let text = node.textContent;
+                for (const [key, value] of Object.entries(repls))
+                    text = text.replace(new RegExp(key, 'g'), value);
+                node.textContent = text;
+            }
         }
     }
 }
 
 class Finder {
-    constructor(el) {
-        this.el = el;
+    constructor(title) {
+        this.el = document.createElement('div');
+        this.el.className = 'finder hide';
+        this.el.innerHTML = (title ? `<h2>${title}</h2>` : '') + '<input type="search" placeholder="Type to filter&hellip;">' +
+            ' <div class="listing"></div>';
+        document.body.appendChild(this.el);
 
-        this.pages = [];
+        this.dex = [];
         this.searchInput = this.el.querySelector('input');
         this.listing = this.el.querySelector('.listing');
-        this.activeLink = this.prevNeedle = null;
+        this._activeLink = this.prevNeedle = null;
 
-        document.body.addEventListener('keydown', this.onKeyDown.bind(this));
+        this.searchInput.addEventListener('keydown', this.onKeyDown.bind(this));
 
         // Detect the `X` button click in the search input.
         this.searchInput.addEventListener('click', (event) => {
@@ -182,7 +213,7 @@ class Finder {
 
         this.el.addEventListener('click', (event) => {
             if (event.target.tagName === 'A')
-                this.el.classList.add('hide');
+                this.hide();
         });
     }
 
@@ -192,60 +223,69 @@ class Finder {
         fetch(this.pagesUrl)
             .then((response) => response.ok ? response.text() : Promise.reject(response))
             .then((text) => {
-                this.pages.splice(0, this.pages.length);
-                for (let page of text.trim().split('\n'))
-                    this.pages.push(page.replace(/^\.\//, ''));
-                this.pages.sort();
+                this.dex.splice(0, this.dex.length);
+                for (let page of text.trim().split('\n')) {
+                    const hash = page.replace(/^\.\//, '');
+                    this.dex.push({hash, text: hash});
+                }
+                this.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
                 this.applyFilter();
             })
             .catch((response) => {
-                console.warn('Could not load pages from `' + pagesUrl + '`.', response);
+                console.warn('Could not load dex from `' + pagesUrl + '`.', response);
             });
     }
 
-    onKeyDown(event) {
-        if (event.target !== this.searchInput) {
-            if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
-                    !event.target.matches(UI_SELECTOR)) {
-                if (event.key === 'f') {
-                    event.preventDefault();
-                    this.el.classList.remove('hide');
-                    this.searchInput.focus();
-                    this.searchInput.value = '';
-                    this.applyFilter();
-                }
+    show() {
+        this.el.classList.remove('hide');
+        this.searchInput.focus();
+        this.searchInput.value = '';
+        this.applyFilter();
+    }
 
-                if (event.key === 'r') {
-                    // FIXME: Think of a better API to reload the page.
-                    mainEl.dataset.page = '';
-                    App.onHashChange();
-                }
-            }
+    hide() {
+        this.el.classList.add('hide');
+    }
 
-            return;
+    get activeLink() {
+        return this._activeLink;
+    }
+
+    set activeLink(link) {
+        if (this._activeLink)
+            this._activeLink.classList.remove('active');
+
+        this._activeLink = link;
+
+        if (this._activeLink) {
+            this._activeLink.classList.add('active');
+            const maxScrollTop = this._activeLink.offsetTop,
+                minScrollTop = this._activeLink.offsetTop + this._activeLink.clientHeight - this.el.clientHeight;
+            this.el.scrollTop = Math.min(maxScrollTop, Math.max(minScrollTop, this.el.scrollTop));
         }
+    }
 
+    onKeyDown(event) {
         if (event.key === 'Escape') {
             if (this.searchInput.value) {
                 this.searchInput.value = '';
                 this.applyFilter();
                 this.searchInput.focus();
             } else {
-                this.el.classList.add('hide');
+                this.hide();
             }
 
         } else if (event.key === 'Enter') {
-            this.activeLink.click();
-            this.el.classList.add('hide');
+            this._activeLink.click();
 
         } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
             const direction = event.key === 'ArrowUp' ? 'previous' : 'next',
-                siblingProp = direction + 'ElementSibling';
-            if (this.activeLink[siblingProp]) {
-                this.activeLink.classList.remove('active');
-                this.activeLink = this.activeLink[siblingProp];
-                this.activeLink.classList.add('active');
-            }
+                siblingProp = direction + 'ElementSibling',
+                sibling = this._activeLink[siblingProp];
+            if (sibling)
+                this.activeLink = sibling;
+            else if (event.key === 'ArrowUp')
+                this.el.scrollTop = 0;
 
         } else {
             setTimeout(() => this.applyFilter());
@@ -259,28 +299,23 @@ class Finder {
             return;
 
         this.listing.innerHTML = '<em>Searching&hellip;</em>';
-        const links = this.listing.querySelectorAll('a');
-        if (this.activeLink)
-            this.activeLink.classList.remove('active');
         this.activeLink = null;
 
         const matches = [];
 
-        for (let page of this.pages) {
-            const {score, hlMarkup} = Finder.checkMatch(page, needle);
+        for (const {text, hash} of this.dex) {
+            const {score, hlMarkup} = Finder.checkMatch(text, needle);
             if (score)
-                matches.push({score, page, hlMarkup});
+                matches.push({score, hash, hlMarkup});
         }
         matches.sort((a, b) => b.score - a.score);
 
         const markup = [];
-        for (const {page, hlMarkup} of matches)
-            markup.push('<a href="#', page, '">', hlMarkup, '</a>\n');
+        for (const {hash, hlMarkup} of matches)
+            markup.push('<a href="#', hash, '">', hlMarkup, '</a>\n');
         this.listing.innerHTML = markup.join('');
 
         this.activeLink = this.listing.firstElementChild;
-        if (this.activeLink)
-            this.activeLink.classList.add('active');
 
         this.prevNeedle = needle;
     }
@@ -426,7 +461,7 @@ class Loader {
             new FancyTable(tableEl).apply();
 
         // Table of Contents.
-        const tocEl = el.querySelector('.toc');
+        const tocEl = el.querySelector('ol.toc');
         if (tocEl) {
             tocEl.innerHTML = 'Loading table of contents&hellip;';
             const markup = [];
@@ -470,7 +505,7 @@ class Loader {
     }
 
     static evalEmbedded(parent, frontMatter) {
-        for (const codeEl of parent.querySelectorAll('code.lang-javascript')) {
+        for (const codeEl of parent.querySelectorAll('code.language-javascript')) {
             const match = codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
             if (!match)
                 continue;
@@ -631,6 +666,27 @@ class App {
             .finally(LoadingOSD.hide.bind(LoadingOSD));
     }
 
+    static onKeyDown(event) {
+        if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey &&
+            !event.target.matches(UI_SELECTOR)) {
+
+            if (event.key === 'Escape') {
+                App.pageFinder.hide();
+            }
+
+            if (event.key === 'f') {
+                event.preventDefault();
+                App.pageFinder.show();
+            }
+
+            if (event.key === 'r') {
+                // FIXME: Think of a better API to reload the page.
+                mainEl.dataset.page = '';
+                App.onHashChange();
+            }
+        }
+    }
+
     static updateTimeDisplays() {
         for (const timeEl of document.querySelectorAll('time[datetime]')) {
             const time = new Date(timeEl.dateTime);
@@ -667,23 +723,20 @@ class App {
     }
 
     static main() {
+        App.pageFinder = new Finder('Find page');
+        App.pageFinder.load('pages.txt');
+
+        document.body.addEventListener('keydown', App.onKeyDown);
         window.addEventListener('hashchange', App.onHashChange);
         App.onHashChange();
 
         setInterval(App.updateTimeDisplays, 60000);
         App.updateTimeDisplays();
-
-        new Finder(document.getElementById('finder')).load('pages.txt');
     }
 }
 
 document.body.insertAdjacentHTML('afterbegin', `
     <article id=main></article>
-    <div id="finder" class="hide">
-        <input type="search" placeholder="Type to filter&hellip;">
-        <div class="listing"></div>
-    </div>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
 `);
 

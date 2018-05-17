@@ -32,7 +32,7 @@ hr {
     display: inherit;
 }
 
-.hide, #finder a.hide {
+.hide {
     display: none;
 }
 
@@ -122,7 +122,7 @@ blockquote > p:last-child {
     margin-bottom: 0;
 }
 
-#finder {
+.finder {
     position: fixed;
     top: 0;
     right: 96px;
@@ -137,7 +137,11 @@ blockquote > p:last-child {
     overflow-y: auto;
 }
 
-#finder input {
+.finder h2 {
+    margin: 0;
+}
+
+.finder input {
     border-width: 0 0 1px 0;
     border-color: black;
     background: transparent;
@@ -145,28 +149,28 @@ blockquote > p:last-child {
     margin-bottom: 1em;
 }
 
-#finder input:focus {
+.finder input:focus {
     outline: 1px solid black;
 }
 
-#finder a {
+.finder a {
     padding: 3px 6px;
     text-decoration: none;
     color: black;
     display: block;
 }
 
-#finder .active, #finder a:hover {
+.finder .active, .finder a:hover {
     background-color: #444;
     color: white;
 }
 
-#finder .hl {
+.finder .hl {
     color: #D48900;
     text-shadow: 0 0 1px #D48900;
 }
 
-#finder .active .hl, #finder a:hover .hl {
+.finder .active .hl, .finder a:hover .hl {
     color: orange;
     text-shadow: 0 0 1px orange;
 }
