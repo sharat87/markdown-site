@@ -14,21 +14,6 @@ const MATH_JAX_CONFIG = {
 
 const UI_SELECTOR = 'input, select, button, textarea, [contenteditable]';
 
-// Add MathJax config to the page.
-const el = document.createElement('script');
-el.type = 'text/x-mathjax-config';
-el.text = 'MathJax.Hub.Config(' + JSON.stringify(MATH_JAX_CONFIG) + ')';
-document.head.appendChild(el);
-
-// Load library scripts needed.
-const scriptPromises = [];
-script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js',
-    script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'));
-script('https://unpkg.com/marked/marked.min.js');
-script('https://unpkg.com/showdown/dist/showdown.min.js');
-script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
-script('https://unpkg.com/mermaid/dist/mermaid.min.js');
-
 class Compiler {
     static compile(raw) {
         const converter = new showdown.Converter({
@@ -754,62 +739,67 @@ class App {
     }
 }
 
-document.body.insertAdjacentHTML('afterbegin', `
-    <article id=main></article>
-    <div id="helpBox" class="hide overlay">
-        <h2>Hotkeys</h2>
-        <table>
-            <tr>
-                <th>f</th>
-                <td>Open page finder.</td>
-            </tr>
-            <tr>
-                <th>s</th>
-                <td>Open header finder.</td>
-            </tr>
-            <tr>
-                <th>r</th>
-                <td>Reload current page.</td>
-            </tr>
-            <tr>
-                <th>ESC</th>
-                <td>Close any finder or overlay.</td>
-            </tr>
-        </table>
-        <p><em>Hit Escape to close.</em></p>
-    </div>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-`);
-
-for (const script of document.querySelectorAll('script[src]')) {
-    const src = script.getAttribute('src');
-    if (src.endsWith('markdown-site-main.js')) {
-        const link = document.createElement('link');
-        link.setAttribute('rel', 'stylesheet');
-        link.setAttribute('href', src.replace('markdown-site-main.js', 'master.css'));
-        document.head.appendChild(link);
-        break;
-    }
-}
-
-const mainEl = document.getElementById('main');
-
-Promise.all(scriptPromises).then(App.main);
-
-function script(url, after) {
+function boot() {
+    // Add MathJax config to the page.
     const el = document.createElement('script');
-    el.setAttribute('async', 'async');
-    el.src = url;
+    el.type = 'text/x-mathjax-config';
+    el.text = 'MathJax.Hub.Config(' + JSON.stringify(MATH_JAX_CONFIG) + ')';
+    document.head.appendChild(el);
 
-    if (after)
-        after.then(() => document.head.appendChild(el));
-    else
-        document.head.appendChild(el);
+    // Load library scripts needed.
+    const scriptPromises = [];
+    script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js',
+        script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'));
+    script('https://unpkg.com/marked/marked.min.js');
+    script('https://unpkg.com/showdown/dist/showdown.min.js');
+    script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
+    script('https://unpkg.com/mermaid/dist/mermaid.min.js');
 
-    const promise = new Promise((resolve, reject) => {
-        el.onload = () => resolve();
-    });
+    document.body.insertAdjacentHTML('afterbegin', `
+        <article id=main></article>
+        <div id="helpBox" class="hide overlay">
+            <h2>Hotkeys</h2>
+            <table>
+                <tr> <th>f</th> <td>Open page finder.</td> </tr>
+                <tr> <th>s</th> <td>Open header finder.</td> </tr>
+                <tr> <th>r</th> <td>Reload current page.</td> </tr>
+                <tr> <th>ESC</th> <td>Close any finder or overlay.</td> </tr>
+            </table>
+            <p><em>Hit Escape to close.</em></p>
+        </div>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+    `);
 
-    scriptPromises.push(promise);
-    return promise;
+    for (const script of document.querySelectorAll('script[src]')) {
+        const src = script.getAttribute('src');
+        if (src.endsWith('markdown-site-main.js')) {
+            const link = document.createElement('link');
+            link.setAttribute('rel', 'stylesheet');
+            link.setAttribute('href', src.replace('markdown-site-main.js', 'master.css'));
+            document.head.appendChild(link);
+            break;
+        }
+    }
+
+    window.mainEl = document.getElementById('main');
+
+    Promise.all(scriptPromises).then(App.main);
+
+    function script(url, after) {
+        const el = document.createElement('script');
+        el.setAttribute('async', 'async');
+        el.src = url;
+
+        if (after)
+            after.then(() => document.head.appendChild(el));
+        else
+            document.head.appendChild(el);
+
+        const promise = new Promise((resolve, reject) => {
+            el.onload = () => resolve();
+        });
+
+        scriptPromises.push(promise);
+        return promise;
+    }
 }
