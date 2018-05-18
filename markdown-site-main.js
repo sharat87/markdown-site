@@ -769,12 +769,11 @@ function boot() {
 
     // Load library scripts needed.
     const scriptsPromise = Promise.all([
-        script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'),
-        script('https://unpkg.com/marked/marked.min.js'),
-        script('https://unpkg.com/showdown/dist/showdown.min.js'),
-        script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js'),
-        script('https://unpkg.com/mermaid/dist/mermaid.min.js'),
-    ]);
+        'https://unpkg.com/showdown/dist/showdown.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js',
+        'https://unpkg.com/mermaid/dist/mermaid.min.js',
+    ].map(script));
 
     document.body.insertAdjacentHTML('afterbegin', `
         <article id=main></article>
