@@ -768,14 +768,13 @@ function boot() {
     document.head.appendChild(el);
 
     // Load library scripts needed.
-    const scriptPromises = [];
-    // script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js', scriptPromises,
-        script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js', scriptPromises)
-    // );
-    script('https://unpkg.com/marked/marked.min.js', scriptPromises);
-    script('https://unpkg.com/showdown/dist/showdown.min.js', scriptPromises);
-    script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js', scriptPromises);
-    script('https://unpkg.com/mermaid/dist/mermaid.min.js', scriptPromises);
+    const scriptsPromise = Promise.all([
+        script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'),
+        script('https://unpkg.com/marked/marked.min.js'),
+        script('https://unpkg.com/showdown/dist/showdown.min.js'),
+        script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js'),
+        script('https://unpkg.com/mermaid/dist/mermaid.min.js'),
+    ]);
 
     document.body.insertAdjacentHTML('afterbegin', `
         <article id=main></article>
@@ -805,24 +804,15 @@ function boot() {
 
     window.mainEl = document.getElementById('main');
 
-    Promise.all(scriptPromises).then(App.main);
+    scriptsPromise.then(App.main);
 }
 
-function script(url, promises, after) {
+function script(url) {
     const el = document.createElement('script');
     el.setAttribute('async', 'async');
     el.src = url;
-
-    if (after)
-        after.then(() => document.head.appendChild(el));
-    else
-        document.head.appendChild(el);
-
-    const promise = new Promise((resolve, reject) => {
-        el.onload = () => resolve();
+    document.head.appendChild(el);
+    return new Promise((resolve/*, reject*/) => {
+        el.onload = resolve;
     });
-
-    if (promises !== undefined)
-        promises.push(promise);
-    return promise;
 }
