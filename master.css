@@ -295,6 +295,14 @@ h1:hover .link, h2:hover .link, h3:hover .link, h4:hover .link {
     margin-bottom: 0;
 }
 
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item .check {
+    cursor: default;
+}
+
 @media print {
     body {
         border: none;

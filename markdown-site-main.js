@@ -52,6 +52,16 @@ class Compiler {
         for (const el of box.querySelectorAll('h1, h2, h3, h4'))
             Compiler.addPermanentLinks(el);
 
+        for (const li of box.querySelectorAll('li.task-list-item')) {
+            li.style = '';
+            const input = li.firstElementChild;
+            const check = document.createElement('span');
+            check.className = 'check';
+            check.innerText = input.checked ? '\u2611' : '\u2610';
+            check.style.margin = '0px 0.35em 0.25em -1.6em';
+            li.replaceChild(check, input);
+        }
+
         return {frontMatter, box};
     }
 
