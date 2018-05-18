@@ -52,10 +52,15 @@ class Compiler {
         for (const el of box.querySelectorAll('h1, h2, h3, h4'))
             Compiler.addPermanentLinks(el);
 
-        return {frontMatter, html: box.innerHTML};
+        return {frontMatter, box};
     }
 
     static highlightSyntax(codeEl, frontMatter) {
+        if (!Compiler.ignoredLangs) {
+            Compiler.hljsMoreLangs = {};
+            Compiler.ignoredLangs = new Set(['none', 'math', 'mermaid']);
+        }
+
         if (codeEl.classList.contains('language-math')) {
             const repl = document.createElement('div');
             repl.textContent = '[[[[[\n' + codeEl.textContent + '\n]]]]]';
@@ -79,8 +84,19 @@ class Compiler {
             codeEl.classList.add(lang, 'language-' + lang);
         }
 
-        if (lang && window.hljs.getLanguage(lang))
-            codeEl.innerHTML = window.hljs.highlight(lang, codeEl.innerText).value;
+        if (!lang || Compiler.ignoredLangs.has(lang))
+            return;
+
+        if (hljs.getLanguage(lang)) {
+            codeEl.innerHTML = hljs.highlight(lang, codeEl.innerText).value;
+        } else {
+            if (!Compiler.hljsMoreLangs[lang])
+                Compiler.hljsMoreLangs[lang] = script(
+                    `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/${lang}.min.js`);
+            Compiler.hljsMoreLangs[lang].then(() => {
+                codeEl.innerHTML = hljs.highlight(lang, codeEl.innerText).value;
+            });
+        }
     }
 
     static addPermanentLinks(el) {
@@ -410,8 +426,13 @@ class Loader {
     }
 
     static showPage([el, text, headers]) {
-        const {frontMatter, html} = Compiler.compile(text);
-        el.innerHTML = html + '<div class=page-end><span>&#10087;</span></div>';
+        const {frontMatter, box} = Compiler.compile(text);
+        for (const child of el.childNodes)
+            el.removeChild(child);
+        for (const child of box.childNodes)
+            el.appendChild(child);
+        el.insertAdjacentHTML('beforeend', '<div class=page-end><span>&#10087;</span></div>');
+
         const hasTitleH1 = el.firstElementChild.tagName === 'H1';
 
         document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
@@ -748,12 +769,13 @@ function boot() {
 
     // Load library scripts needed.
     const scriptPromises = [];
-    script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js',
-        script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'));
-    script('https://unpkg.com/marked/marked.min.js');
-    script('https://unpkg.com/showdown/dist/showdown.min.js');
-    script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
-    script('https://unpkg.com/mermaid/dist/mermaid.min.js');
+    // script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js', scriptPromises,
+        script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js', scriptPromises)
+    // );
+    script('https://unpkg.com/marked/marked.min.js', scriptPromises);
+    script('https://unpkg.com/showdown/dist/showdown.min.js', scriptPromises);
+    script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js', scriptPromises);
+    script('https://unpkg.com/mermaid/dist/mermaid.min.js', scriptPromises);
 
     document.body.insertAdjacentHTML('afterbegin', `
         <article id=main></article>
@@ -784,22 +806,23 @@ function boot() {
     window.mainEl = document.getElementById('main');
 
     Promise.all(scriptPromises).then(App.main);
+}
 
-    function script(url, after) {
-        const el = document.createElement('script');
-        el.setAttribute('async', 'async');
-        el.src = url;
+function script(url, promises, after) {
+    const el = document.createElement('script');
+    el.setAttribute('async', 'async');
+    el.src = url;
 
-        if (after)
-            after.then(() => document.head.appendChild(el));
-        else
-            document.head.appendChild(el);
+    if (after)
+        after.then(() => document.head.appendChild(el));
+    else
+        document.head.appendChild(el);
 
-        const promise = new Promise((resolve, reject) => {
-            el.onload = () => resolve();
-        });
+    const promise = new Promise((resolve, reject) => {
+        el.onload = () => resolve();
+    });
 
-        scriptPromises.push(promise);
-        return promise;
-    }
+    if (promises !== undefined)
+        promises.push(promise);
+    return promise;
 }
