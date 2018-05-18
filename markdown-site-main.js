@@ -427,9 +427,9 @@ class Loader {
 
     static showPage([el, text, headers]) {
         const {frontMatter, box} = Compiler.compile(text);
-        for (const child of el.childNodes)
+        for (const child of [...el.childNodes])
             el.removeChild(child);
-        for (const child of box.childNodes)
+        for (const child of [...box.childNodes])
             el.appendChild(child);
         el.insertAdjacentHTML('beforeend', '<div class=page-end><span>&#10087;</span></div>');
 
@@ -546,7 +546,7 @@ class Loader {
 }
 
 class LoadingOSD {
-    static getBox() {
+    static get box() {
         if (!this._box) {
             document.body.insertAdjacentHTML('beforeend', '<div class=loading-box>Loading&hellip;</div>');
             this._box = document.body.lastElementChild;
@@ -555,11 +555,11 @@ class LoadingOSD {
     }
 
     static show() {
-        this.getBox().classList.remove('hide');
+        this.box.classList.remove('hide');
     }
 
     static hide() {
-        this.getBox().classList.add('hide');
+        this.box.classList.add('hide');
     }
 }
 
