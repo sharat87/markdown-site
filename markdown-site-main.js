@@ -578,6 +578,13 @@ class EvalBlock {
         this.fn = new Function(codeEl.innerText);
     }
 
+    get codeBox() {
+        let box = this.preEl;
+        while (box.parentElement !== this.pageEl)
+            box = box.parentElement;
+        return box;
+    }
+
     run() {
         const match = this.codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
         if (!match)
@@ -597,7 +604,7 @@ class EvalBlock {
             p.remove();
             this.preEl.style.display = '';
         });
-        const box = this.preEl.closest('.pre-code-box') || this.preEl;
+        const box = this.codeBox;
         box.insertAdjacentElement('afterend', p);
         box.style.display = 'none';
     }
