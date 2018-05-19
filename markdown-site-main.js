@@ -530,7 +530,7 @@ class EvalBlock {
     constructor(codeEl, frontMatter) {
         this.codeEl = codeEl;
         this.preEl = codeEl.parentElement;
-        this.articleEl = codeEl.closest('article');
+        this.pageEl = codeEl.closest('.page');
         this.frontMatter = frontMatter;
         this.config = null;
         this.fn = new Function(codeEl.innerText);
@@ -794,7 +794,7 @@ function boot() {
     ].map(script));
 
     document.body.insertAdjacentHTML('afterbegin', `
-        <article id=main></article>
+        <article id=main class=page></article>
         <div id="helpBox" class="hide overlay">
             <h2>Hotkeys</h2>
             <table>
