@@ -521,27 +521,33 @@ class Loader {
     }
 
     static evalEmbedded(parent, frontMatter) {
-        for (const codeEl of parent.querySelectorAll('code.language-javascript')) {
-            const match = codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
-            if (!match)
-                continue;
-            const config = JSON.parse(match[1]);
-            if (config.eval) {
-                const fn = new Function(codeEl.innerText);
-                fn.call({
-                    preEl: codeEl.parentElement,
-                    codeEl,
-                    frontMatter,
-                    hide: this.contextHide,
-                    articleEl: mainEl,
-                    config,
-                });
-                codeEl.parentElement.classList.add('evaluated');
-            }
+        for (const codeEl of parent.querySelectorAll('code.language-javascript'))
+            new EvalBlock(codeEl, frontMatter).run();
+    }
+}
+
+class EvalBlock {
+    constructor(codeEl, frontMatter) {
+        this.codeEl = codeEl;
+        this.preEl = codeEl.parentElement;
+        this.articleEl = codeEl.closest('article');
+        this.frontMatter = frontMatter;
+        this.config = null;
+        this.fn = new Function(codeEl.innerText);
+    }
+
+    run() {
+        const match = this.codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
+        if (!match)
+            return;
+        this.config = JSON.parse(match[1]);
+        if (this.config.eval) {
+            this.fn();
+            this.codeEl.parentElement.classList.add('evaluated');
         }
     }
 
-    static contextHide(opts) {
+    hide(opts) {
         opts = opts || {};
         const p = document.createElement('p');
         p.innerHTML = '<button>' + (opts.text || 'Show Code') + '</button>';
@@ -576,6 +582,7 @@ class LoadingOSD {
 class FancyTable {
     constructor(tableEl) {
         this.tableEl = tableEl;
+        this.sorterRow = tableEl.tHead.firstElementChild;
         this.rows = Array.from(this.tableEl.tBodies[0].getElementsByTagName('tr'));
         this.sorts = [];
         this.boundRowCompareFn = this.rowCompareFn.bind(this);
@@ -583,7 +590,8 @@ class FancyTable {
 
     apply() {
         this.tableEl.classList.add('fancy');
-        this.tableEl.addEventListener('click', this.onClick.bind(this));
+        this.sorterRow.classList.add('sorter');
+        this.sorterRow.addEventListener('click', this.onClick.bind(this));
     }
 
     onClick(event) {
