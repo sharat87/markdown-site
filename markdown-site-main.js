@@ -403,6 +403,41 @@ class Finder {
     }
 }
 
+class PageDisplay {
+    constructor(el) {
+        this.el = el;
+    }
+
+    load(page, jump) {
+        if (page === this.page) {
+            (jump ? this.el.querySelector('#' + jump) : this.el.firstElementChild).scrollIntoView();
+            LoadingOSD.hide();
+            return;
+        }
+
+        this.page = '';
+
+        Loader.load(page, this.el)
+            .then(() => this.onLoad(page, jump))
+            .finally(LoadingOSD.hide);
+    }
+
+    onLoad(page, jump) {
+        if (jump)
+            this.el.querySelector('#' + jump).scrollIntoView();
+        this.page = page;
+        App.outlineFinder.dex.splice(0, App.outlineFinder.dex.length);
+        for (const header of this.el.querySelectorAll('h1, h2, h3, h4')) {
+            App.outlineFinder.dex.push({
+                text: header.querySelector('span').innerText,
+                hash: header.querySelector('a').getAttribute('href').substr(1),
+            });
+        }
+        App.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
+        App.outlineFinder.applyFilter();
+    }
+}
+
 class Loader {
     static load(url, el) {
         return fetch(url, {cache: 'no-cache'})
@@ -563,19 +598,19 @@ class EvalBlock {
 
 class LoadingOSD {
     static get box() {
-        if (!this._box) {
+        if (!LoadingOSD._box) {
             document.body.insertAdjacentHTML('beforeend', '<div class=loading-box>Loading&hellip;</div>');
-            this._box = document.body.lastElementChild;
+            LoadingOSD._box = document.body.lastElementChild;
         }
-        return this._box;
+        return LoadingOSD._box;
     }
 
     static show() {
-        this.box.classList.remove('hide');
+        LoadingOSD.box.classList.remove('hide');
     }
 
     static hide() {
-        this.box.classList.add('hide');
+        LoadingOSD.box.classList.add('hide');
     }
 }
 
@@ -674,30 +709,7 @@ class App {
         if (!page || page.endsWith('/'))
             page += 'index.md';
 
-        if (page === mainEl.dataset.page) {
-            (jump ? mainEl.querySelector('#' + jump) : mainEl.firstElementChild).scrollIntoView();
-            LoadingOSD.hide();
-            return;
-        }
-
-        mainEl.dataset.page = '';
-
-        Loader.load(page, mainEl)
-            .then(() => {
-                if (jump)
-                    mainEl.querySelector('#' + jump).scrollIntoView();
-                mainEl.dataset.page = page;
-                App.outlineFinder.dex.splice(0, App.outlineFinder.dex.length);
-                for (const header of mainEl.querySelectorAll('h1, h2, h3, h4')) {
-                    App.outlineFinder.dex.push({
-                        text: header.querySelector('span').innerText,
-                        hash: header.querySelector('a').getAttribute('href').substr(1),
-                    });
-                }
-                App.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
-                App.outlineFinder.applyFilter();
-            })
-            .finally(LoadingOSD.hide.bind(LoadingOSD));
+        mainPage.load(page, jump);
     }
 
     static onKeyDown(event) {
@@ -718,7 +730,7 @@ class App {
 
             } else if (event.key === 'r') {
                 // FIXME: Think of a better API to reload the page.
-                mainEl.dataset.page = '';
+                mainPage.page = '';
                 App.onHashChange();
 
             } else if (event.key === '?') {
@@ -819,7 +831,7 @@ function boot() {
         }
     }
 
-    window.mainEl = document.getElementById('main');
+    window.mainPage = new PageDisplay(document.getElementById('main'));
 
     scriptsPromise.then(App.main);
 }
