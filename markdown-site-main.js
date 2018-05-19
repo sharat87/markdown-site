@@ -406,26 +406,33 @@ class Finder {
 class PageDisplay {
     constructor(el) {
         this.el = el;
+        this.page = this.jump = null;
     }
 
-    load(page, jump) {
-        if (page === this.page) {
+    load(page, jump, reload) {
+        LoadingOSD.show();
+
+        if (!reload && page === this.page) {
             (jump ? this.el.querySelector('#' + jump) : this.el.firstElementChild).scrollIntoView();
             LoadingOSD.hide();
             return;
         }
 
-        this.page = '';
-
+        this.page = this.jump = null;
         Loader.load(page, this.el)
             .then(() => this.onLoad(page, jump))
             .finally(LoadingOSD.hide);
+    }
+
+    reload() {
+        this.load(this.page, this.jump, true);
     }
 
     onLoad(page, jump) {
         if (jump)
             this.el.querySelector('#' + jump).scrollIntoView();
         this.page = page;
+        this.jump = jump;
         App.outlineFinder.dex.splice(0, App.outlineFinder.dex.length);
         for (const header of this.el.querySelectorAll('h1, h2, h3, h4')) {
             App.outlineFinder.dex.push({
@@ -701,7 +708,6 @@ class App {
     static onHashChange(event) {
         if (event)
             event.preventDefault();
-        LoadingOSD.show();
 
         let page = location.hash.substr(1), jump = null;
         if (page.indexOf('#') >= 0)
@@ -729,9 +735,7 @@ class App {
                 App.outlineFinder.show();
 
             } else if (event.key === 'r') {
-                // FIXME: Think of a better API to reload the page.
-                mainPage.page = '';
-                App.onHashChange();
+                mainPage.reload();
 
             } else if (event.key === '?') {
                 document.getElementById('helpBox').classList.remove('hide');
