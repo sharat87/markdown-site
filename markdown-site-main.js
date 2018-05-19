@@ -722,7 +722,7 @@ class App {
         if (!page || page.endsWith('/'))
             page += 'index.md';
 
-        mainPage.load(page, jump);
+        App.mainPage.load(page, jump);
     }
 
     static onKeyDown(event) {
@@ -742,7 +742,7 @@ class App {
                 App.outlineFinder.show();
 
             } else if (event.key === 'r') {
-                mainPage.reload();
+                App.mainPage.reload();
 
             } else if (event.key === '?') {
                 document.getElementById('helpBox').classList.remove('hide');
@@ -787,6 +787,8 @@ class App {
     }
 
     static main() {
+        App.mainPage = new PageDisplay(document.getElementById('main'));
+
         App.pageFinder = new Finder('Find page');
         App.pageFinder.load('pages.txt');
 
@@ -841,8 +843,6 @@ function boot() {
             break;
         }
     }
-
-    window.mainPage = new PageDisplay(document.getElementById('main'));
 
     scriptsPromise.then(App.main);
 }
