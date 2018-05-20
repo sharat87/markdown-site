@@ -32,6 +32,10 @@ class Compiler {
 
         const box = document.createElement('div');
         box.innerHTML = html;
+        return Compiler.postProcess(converter, box);
+    }
+
+    static postProcess(converter, box) {
         for (const el of box.querySelectorAll('p, td, li')) {
             if (el.tagName === 'P' && el.textContent === '[TOC]') {
                 const toc = document.createElement('ol');
@@ -48,6 +52,7 @@ class Compiler {
         const frontMatter = converter.getMetadata();
         for (const codeEl of box.querySelectorAll('pre > code'))
             Compiler.highlightSyntax(codeEl, frontMatter);
+        box.dataset.meta = JSON.stringify(frontMatter);
 
         for (const el of box.querySelectorAll('h1, h2, h3, h4'))
             Compiler.addPermanentLinks(el);
@@ -61,6 +66,10 @@ class Compiler {
             check.style.margin = '0px 0.35em 0.25em -1.6em';
             li.replaceChild(check, input);
         }
+
+        for (const e of box.getElementsByTagName('a'))
+            if (e.href.endsWith('.md'))
+                e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
 
         return {frontMatter, box};
     }
@@ -488,8 +497,8 @@ class PageDisplay {
     }
 
     showPage([text, headers]) {
-        const {frontMatter, box} = Compiler.compile(text);
-        this.frontMatter = frontMatter;
+        const {box} = Compiler.compile(text);
+        this.frontMatter = JSON.parse(box.dataset.meta);
         const contentEl = this.contentEl = box;
 
         const hasTitleH1 = contentEl.firstElementChild.tagName === 'H1';
@@ -510,10 +519,6 @@ class PageDisplay {
         contentEl.firstElementChild.insertAdjacentHTML(
             hasTitleH1 ? 'afterend' : 'beforebegin',
             '<p class=page-desc>' + pageDesc.join(' ') + '</p>');
-
-        for (const e of contentEl.getElementsByTagName('a'))
-            if (e.href.endsWith('.md'))
-                e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
 
         for (const codeEl of contentEl.querySelectorAll('pre > code')) {
             const preEl = codeEl.parentElement;
