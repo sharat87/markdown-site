@@ -478,6 +478,7 @@ class PageDisplay {
     showPage([text, headers]) {
         const el = this.el;
         const {frontMatter, box} = Compiler.compile(text);
+        this.frontMatter = frontMatter;
         for (const child of [...el.childNodes])
             el.removeChild(child);
         for (const child of [...box.childNodes])
@@ -557,7 +558,7 @@ class PageDisplay {
 
     postProcessPage() {
         for (const codeEl of this.el.querySelectorAll('code.language-javascript'))
-            new EvalBlock(codeEl, frontMatter).run();
+            new EvalBlock(codeEl, this.frontMatter).run();
         App.updateTimeDisplays();
         MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
         mermaid.init();
