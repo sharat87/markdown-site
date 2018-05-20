@@ -552,18 +552,16 @@ class PageDisplay {
         if (autoFocusEl)
             autoFocusEl.focus();
 
-        return new Promise((resolve, reject) => {
-            this.evalEmbedded(el, frontMatter);
-            App.updateTimeDisplays();
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
-            mermaid.init();
-            resolve();
-        });
+        return this.postProcessPage();
     }
 
-    evalEmbedded(parent, frontMatter) {
-        for (const codeEl of parent.querySelectorAll('code.language-javascript'))
+    postProcessPage() {
+        for (const codeEl of this.el.querySelectorAll('code.language-javascript'))
             new EvalBlock(codeEl, frontMatter).run();
+        App.updateTimeDisplays();
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+        mermaid.init();
+        Promise.resolve();
     }
 }
 
