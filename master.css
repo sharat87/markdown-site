@@ -48,7 +48,7 @@ hr {
     padding: 3px 2em;
 }
 
-article > h1:first-child {
+.content > h1:first-child {
     margin-top: 0;
     font-size: 2em;
 }
