@@ -407,6 +407,7 @@ class PageDisplay {
     constructor(el) {
         this.el = el;
         this.page = this.jump = null;
+        this.boundShowPage = this.showPage.bind(this);
     }
 
     load(page, jump, reload) {
@@ -419,7 +420,7 @@ class PageDisplay {
         }
 
         this.page = this.jump = null;
-        Loader.load(page, this.el)
+        this.doLoad(page, this.el)
             .then(() => this.onLoad(page, jump))
             .finally(LoadingOSD.hide);
     }
@@ -443,41 +444,39 @@ class PageDisplay {
         App.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
         App.outlineFinder.applyFilter();
     }
-}
 
-class Loader {
-    static load(url, el) {
+    doLoad(url, el) {
         return fetch(url, {cache: 'no-cache'})
-            .then((response) => Loader.onResponse(el, response))
-            .then(Loader.showPage)//.catch(Loader.onError);
+            .then(PageDisplay.onResponse)
+            .then(this.boundShowPage)//.catch(this.onError.bind(this));
     }
 
-    static onResponse(el, response) {
+    static onResponse(response) {
         if (response.ok) {
             return Promise.all([
-                Promise.resolve(el),
                 response.text(),
                 Promise.resolve(response.headers),
             ]);
         } else {
-            return Promise.reject([el, response]);
+            return Promise.reject(response);
         }
     }
 
-    static onError([el, response]) {
+    onError(response) {
         console.error('Error fetching document.', response);
         const tplEl = document.getElementById('status' + response.status);
         if (tplEl) {
-            el.innerHTML = '';
-            el.appendChild(tplEl.content);
+            this.el.innerHTML = '';
+            this.el.appendChild(tplEl.content);
         } else {
-            el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
+            this.el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
                 response.statusText + '</h1>';
         }
         return Promise.reject();
     }
 
-    static showPage([el, text, headers]) {
+    showPage([text, headers]) {
+        const el = this.el;
         const {frontMatter, box} = Compiler.compile(text);
         for (const child of [...el.childNodes])
             el.removeChild(child);
@@ -554,7 +553,7 @@ class Loader {
             autoFocusEl.focus();
 
         return new Promise((resolve, reject) => {
-            Loader.evalEmbedded(el, frontMatter);
+            this.evalEmbedded(el, frontMatter);
             App.updateTimeDisplays();
             MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
             mermaid.init();
@@ -562,7 +561,7 @@ class Loader {
         });
     }
 
-    static evalEmbedded(parent, frontMatter) {
+    evalEmbedded(parent, frontMatter) {
         for (const codeEl of parent.querySelectorAll('code.language-javascript'))
             new EvalBlock(codeEl, frontMatter).run();
     }
