@@ -220,6 +220,11 @@ h1 + .page-desc {
     background-color: yellow;
 }
 
+.page .content:empty:before {
+    content: 'Loading...';
+    font-style: italic;
+}
+
 .page-end {
     border-top: 1px solid rgba(0, 0, 0, .2);
     color: rgba(0, 0, 0, .2);

@@ -408,6 +408,18 @@ class PageDisplay {
         this.el = el;
         this.page = this.jump = null;
         this.boundShowPage = this.showPage.bind(this);
+
+        this.el.classList.add('page');
+        this.el.innerHTML = '<div class=content></div>\n<div class=page-end><span>&#10087;</span></div>';
+    }
+
+    get contentEl() {
+        return this.el.firstElementChild;
+    }
+
+    set contentEl(val) {
+        val.classList.add('content');
+        this.el.replaceChild(val, this.contentEl);
     }
 
     load(page, jump, reload) {
@@ -420,7 +432,7 @@ class PageDisplay {
         }
 
         this.page = this.jump = null;
-        this.doLoad(page, this.el)
+        this.doLoad(page)
             .then(() => this.onLoad(page, jump))
             .finally(LoadingOSD.hide);
     }
@@ -445,7 +457,7 @@ class PageDisplay {
         App.outlineFinder.applyFilter();
     }
 
-    doLoad(url, el) {
+    doLoad(url) {
         return fetch(url, {cache: 'no-cache'})
             .then(PageDisplay.onResponse)
             .then(this.boundShowPage)//.catch(this.onError.bind(this));
@@ -466,28 +478,23 @@ class PageDisplay {
         console.error('Error fetching document.', response);
         const tplEl = document.getElementById('status' + response.status);
         if (tplEl) {
-            this.el.innerHTML = '';
-            this.el.appendChild(tplEl.content);
+            this.contentEl.innerHTML = '';
+            this.contentEl.appendChild(tplEl.content);
         } else {
-            this.el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
+            this.contentEl.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
                 response.statusText + '</h1>';
         }
         return Promise.reject();
     }
 
     showPage([text, headers]) {
-        const el = this.el;
         const {frontMatter, box} = Compiler.compile(text);
         this.frontMatter = frontMatter;
-        for (const child of [...el.childNodes])
-            el.removeChild(child);
-        for (const child of [...box.childNodes])
-            el.appendChild(child);
-        el.insertAdjacentHTML('beforeend', '<div class=page-end><span>&#10087;</span></div>');
+        const contentEl = this.contentEl = box;
 
-        const hasTitleH1 = el.firstElementChild.tagName === 'H1';
+        const hasTitleH1 = contentEl.firstElementChild.tagName === 'H1';
 
-        document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
+        document.title = (hasTitleH1 ? contentEl.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
         const pageDesc = [];
 
         const authorEl = document.querySelector('meta[name="author"]');
@@ -500,38 +507,38 @@ class PageDisplay {
                 '</time>.');
         }
 
-        el.firstElementChild.insertAdjacentHTML(
+        contentEl.firstElementChild.insertAdjacentHTML(
             hasTitleH1 ? 'afterend' : 'beforebegin',
             '<p class=page-desc>' + pageDesc.join(' ') + '</p>');
 
-        for (const e of el.getElementsByTagName('a'))
+        for (const e of contentEl.getElementsByTagName('a'))
             if (e.href.endsWith('.md'))
                 e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
 
-        for (const codeEl of el.querySelectorAll('pre > code')) {
+        for (const codeEl of contentEl.querySelectorAll('pre > code')) {
             const preEl = codeEl.parentElement;
             preEl.insertAdjacentHTML('beforebegin', '<div class=pre-code-box> <button type=button>Copy</button> </div>');
             preEl.previousElementSibling.insertAdjacentElement('afterbegin', preEl);
             preEl.nextElementSibling.addEventListener('click', () => navigator.clipboard.writeText(codeEl.innerText.trim()));
         }
 
-        for (const tableEl of el.getElementsByTagName('table'))
+        for (const tableEl of contentEl.getElementsByTagName('table'))
             new FancyTable(tableEl).apply();
 
         // Table of Contents.
-        const tocEl = el.querySelector('ol.toc');
+        const tocEl = contentEl.querySelector('ol.toc');
         if (tocEl) {
             tocEl.innerHTML = 'Loading table of contents&hellip;';
             const markup = [];
             const pagePrefix = location.hash.substr(1).split('#', 1)[0] + '#';
             let headers, minLevel;
 
-            if (el.querySelectorAll('h1').length === 1 && el.firstElementChild.tagName === 'H1') {
+            if (contentEl.querySelectorAll('h1').length === 1 && contentEl.firstElementChild.tagName === 'H1') {
                 minLevel = 2;
-                headers = el.querySelectorAll('h2, h3');
+                headers = contentEl.querySelectorAll('h2, h3');
             } else {
                 minLevel = 1;
-                headers = el.querySelectorAll('h1, h2, h3');
+                headers = contentEl.querySelectorAll('h1, h2, h3');
             }
 
             let lastLevel = 0;
@@ -549,7 +556,7 @@ class PageDisplay {
             tocEl.innerHTML = markup.join('\n');
         }
 
-        const autoFocusEl = el.querySelector('[autofocus]');
+        const autoFocusEl = contentEl.querySelector('[autofocus]');
         if (autoFocusEl)
             autoFocusEl.focus();
 
@@ -557,7 +564,7 @@ class PageDisplay {
     }
 
     postProcessPage() {
-        for (const codeEl of this.el.querySelectorAll('code.language-javascript'))
+        for (const codeEl of this.contentEl.querySelectorAll('code.language-javascript'))
             new EvalBlock(codeEl, this.frontMatter).run();
         App.updateTimeDisplays();
         MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
@@ -817,7 +824,7 @@ function boot() {
     ].map(script));
 
     document.body.insertAdjacentHTML('afterbegin', `
-        <article id=main class=page></article>
+        <article id=main></article>
         <div id="helpBox" class="hide overlay">
             <h2>Hotkeys</h2>
             <table>
