@@ -581,18 +581,11 @@ class PageDisplay {
 class EvalBlock {
     constructor(codeEl, frontMatter) {
         this.codeEl = codeEl;
-        this.preEl = codeEl.parentElement;
-        this.pageEl = codeEl.closest('.page');
+        this.codeBox = codeEl.closest('.pre-code-box');
+        this.contentBox = codeEl.closest('.content');
         this.frontMatter = frontMatter;
         this.config = null;
         this.fn = new Function(codeEl.innerText);
-    }
-
-    get codeBox() {
-        let box = this.preEl;
-        while (box.parentElement !== this.pageEl)
-            box = box.parentElement;
-        return box;
     }
 
     run() {
@@ -612,11 +605,10 @@ class EvalBlock {
         p.innerHTML = '<button>' + (opts.text || 'Show Code') + '</button>';
         p.firstElementChild.addEventListener('click', () => {
             p.remove();
-            this.preEl.style.display = '';
+            this.codeBox.style.display = '';
         });
-        const box = this.codeBox;
-        box.insertAdjacentElement('afterend', p);
-        box.style.display = 'none';
+        this.codeBox.insertAdjacentElement('afterend', p);
+        this.codeBox.style.display = 'none';
     }
 }
 
