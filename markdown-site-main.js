@@ -32,6 +32,10 @@ class Compiler {
 
         const box = document.createElement('div');
         box.innerHTML = html;
+        return Compiler.postProcess(converter, box);
+    }
+
+    static postProcess(converter, box) {
         for (const el of box.querySelectorAll('p, td, li')) {
             if (el.tagName === 'P' && el.textContent === '[TOC]') {
                 const toc = document.createElement('ol');
@@ -48,14 +52,34 @@ class Compiler {
         const frontMatter = converter.getMetadata();
         for (const codeEl of box.querySelectorAll('pre > code'))
             Compiler.highlightSyntax(codeEl, frontMatter);
+        box.dataset.meta = JSON.stringify(frontMatter);
 
         for (const el of box.querySelectorAll('h1, h2, h3, h4'))
             Compiler.addPermanentLinks(el);
 
-        return {frontMatter, html: box.innerHTML};
+        for (const li of box.querySelectorAll('li.task-list-item')) {
+            li.style = '';
+            const input = li.firstElementChild;
+            const check = document.createElement('span');
+            check.className = 'check';
+            check.innerText = input.checked ? '\u2611' : '\u2610';
+            check.style.margin = '0px 0.35em 0.25em -1.6em';
+            li.replaceChild(check, input);
+        }
+
+        for (const e of box.getElementsByTagName('a'))
+            if (e.href.endsWith('.md'))
+                e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
+
+        return {frontMatter, box};
     }
 
     static highlightSyntax(codeEl, frontMatter) {
+        if (!Compiler.ignoredLangs) {
+            Compiler.hljsMoreLangs = {};
+            Compiler.ignoredLangs = new Set(['none', 'math', 'mermaid']);
+        }
+
         if (codeEl.classList.contains('language-math')) {
             const repl = document.createElement('div');
             repl.textContent = '[[[[[\n' + codeEl.textContent + '\n]]]]]';
@@ -79,8 +103,19 @@ class Compiler {
             codeEl.classList.add(lang, 'language-' + lang);
         }
 
-        if (lang && window.hljs.getLanguage(lang))
-            codeEl.innerHTML = window.hljs.highlight(lang, codeEl.innerText).value;
+        if (!lang || Compiler.ignoredLangs.has(lang))
+            return;
+
+        if (hljs.getLanguage(lang)) {
+            codeEl.innerHTML = hljs.highlight(lang, codeEl.innerText).value;
+        } else {
+            if (!Compiler.hljsMoreLangs[lang])
+                Compiler.hljsMoreLangs[lang] = script(
+                    `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/${lang}.min.js`);
+            Compiler.hljsMoreLangs[lang].then(() => {
+                codeEl.innerHTML = hljs.highlight(lang, codeEl.innerText).value;
+            });
+        }
     }
 
     static addPermanentLinks(el) {
@@ -377,44 +412,98 @@ class Finder {
     }
 }
 
-class Loader {
-    static load(url, el) {
-        return fetch(url, {cache: 'no-cache'})
-            .then((response) => Loader.onResponse(el, response))
-            .then(Loader.showPage)//.catch(Loader.onError);
+class PageDisplay {
+    constructor(el) {
+        this.el = el;
+        this.page = this.jump = null;
+        this.boundShowPage = this.showPage.bind(this);
+
+        this.el.classList.add('page');
+        this.el.innerHTML = '<div class=content></div>\n<div class=page-end><span>&#10087;</span></div>';
     }
 
-    static onResponse(el, response) {
+    get contentEl() {
+        return this.el.firstElementChild;
+    }
+
+    set contentEl(val) {
+        val.classList.add('content');
+        this.el.replaceChild(val, this.contentEl);
+    }
+
+    load(page, jump, reload) {
+        LoadingOSD.show();
+
+        if (!reload && page === this.page) {
+            (jump ? this.el.querySelector('#' + jump) : this.el.firstElementChild).scrollIntoView();
+            LoadingOSD.hide();
+            return;
+        }
+
+        this.page = this.jump = null;
+        this.doLoad(page)
+            .then(() => this.onLoad(page, jump))
+            .finally(LoadingOSD.hide);
+    }
+
+    reload() {
+        this.load(this.page, this.jump, true);
+    }
+
+    onLoad(page, jump) {
+        if (jump)
+            this.el.querySelector('#' + jump).scrollIntoView();
+        this.page = page;
+        this.jump = jump;
+        App.outlineFinder.dex.splice(0, App.outlineFinder.dex.length);
+        for (const header of this.el.querySelectorAll('h1, h2, h3, h4')) {
+            App.outlineFinder.dex.push({
+                text: header.querySelector('span').innerText,
+                hash: header.querySelector('a').getAttribute('href').substr(1),
+            });
+        }
+        App.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
+        App.outlineFinder.applyFilter();
+    }
+
+    doLoad(url) {
+        return fetch(url, {cache: 'no-cache'})
+            .then(PageDisplay.onResponse)
+            .then(this.boundShowPage)//.catch(this.onError.bind(this));
+    }
+
+    static onResponse(response) {
         if (response.ok) {
             return Promise.all([
-                Promise.resolve(el),
                 response.text(),
                 Promise.resolve(response.headers),
             ]);
         } else {
-            return Promise.reject([el, response]);
+            return Promise.reject(response);
         }
     }
 
-    static onError([el, response]) {
+    onError(response) {
         console.error('Error fetching document.', response);
         const tplEl = document.getElementById('status' + response.status);
         if (tplEl) {
-            el.innerHTML = '';
-            el.appendChild(tplEl.content);
+            this.contentEl.innerHTML = '';
+            this.contentEl.appendChild(tplEl.content);
         } else {
-            el.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
+            this.contentEl.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
                 response.statusText + '</h1>';
         }
         return Promise.reject();
     }
 
-    static showPage([el, text, headers]) {
-        const {frontMatter, html} = Compiler.compile(text);
-        el.innerHTML = html + '<div class=page-end><span>&#10087;</span></div>';
-        const hasTitleH1 = el.firstElementChild.tagName === 'H1';
+    showPage([text, headers]) {
+        const {box} = Compiler.compile(text);
+        this.frontMatter = JSON.parse(box.dataset.meta);
+        const contentEl = this.contentEl = box;
 
-        document.title = (hasTitleH1 ? el.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
+        const hasTitleH1 = contentEl.firstElementChild.tagName === 'H1';
+
+        document.title = (hasTitleH1 ? contentEl.firstElementChild.innerText + ' - ' : '') + ORIGINAL_TITLE;
         const pageDesc = [];
 
         const authorEl = document.querySelector('meta[name="author"]');
@@ -427,38 +516,34 @@ class Loader {
                 '</time>.');
         }
 
-        el.firstElementChild.insertAdjacentHTML(
+        contentEl.firstElementChild.insertAdjacentHTML(
             hasTitleH1 ? 'afterend' : 'beforebegin',
             '<p class=page-desc>' + pageDesc.join(' ') + '</p>');
 
-        for (const e of el.getElementsByTagName('a'))
-            if (e.href.endsWith('.md'))
-                e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
-
-        for (const codeEl of el.querySelectorAll('pre > code')) {
+        for (const codeEl of contentEl.querySelectorAll('pre > code')) {
             const preEl = codeEl.parentElement;
             preEl.insertAdjacentHTML('beforebegin', '<div class=pre-code-box> <button type=button>Copy</button> </div>');
             preEl.previousElementSibling.insertAdjacentElement('afterbegin', preEl);
             preEl.nextElementSibling.addEventListener('click', () => navigator.clipboard.writeText(codeEl.innerText.trim()));
         }
 
-        for (const tableEl of el.getElementsByTagName('table'))
+        for (const tableEl of contentEl.getElementsByTagName('table'))
             new FancyTable(tableEl).apply();
 
         // Table of Contents.
-        const tocEl = el.querySelector('ol.toc');
+        const tocEl = contentEl.querySelector('ol.toc');
         if (tocEl) {
             tocEl.innerHTML = 'Loading table of contents&hellip;';
             const markup = [];
             const pagePrefix = location.hash.substr(1).split('#', 1)[0] + '#';
             let headers, minLevel;
 
-            if (el.querySelectorAll('h1').length === 1 && el.firstElementChild.tagName === 'H1') {
+            if (contentEl.querySelectorAll('h1').length === 1 && contentEl.firstElementChild.tagName === 'H1') {
                 minLevel = 2;
-                headers = el.querySelectorAll('h2, h3');
+                headers = contentEl.querySelectorAll('h2, h3');
             } else {
                 minLevel = 1;
-                headers = el.querySelectorAll('h1, h2, h3');
+                headers = contentEl.querySelectorAll('h1, h2, h3');
             }
 
             let lastLevel = 0;
@@ -476,75 +561,79 @@ class Loader {
             tocEl.innerHTML = markup.join('\n');
         }
 
-        const autoFocusEl = el.querySelector('[autofocus]');
+        const autoFocusEl = contentEl.querySelector('[autofocus]');
         if (autoFocusEl)
             autoFocusEl.focus();
 
-        return new Promise((resolve, reject) => {
-            Loader.evalEmbedded(el, frontMatter);
-            App.updateTimeDisplays();
-            MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
-            mermaid.init();
-            resolve();
-        });
+        return this.postProcessPage();
     }
 
-    static evalEmbedded(parent, frontMatter) {
-        for (const codeEl of parent.querySelectorAll('code.language-javascript')) {
-            const match = codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
-            if (!match)
-                continue;
-            const config = JSON.parse(match[1]);
-            if (config.eval) {
-                const fn = new Function(codeEl.innerText);
-                fn.call({
-                    preEl: codeEl.parentElement,
-                    codeEl,
-                    frontMatter,
-                    hide: this.contextHide,
-                    articleEl: mainEl,
-                    config,
-                });
-                codeEl.parentElement.classList.add('evaluated');
-            }
+    postProcessPage() {
+        for (const codeEl of this.contentEl.querySelectorAll('code.language-javascript'))
+            new EvalBlock(codeEl, this.frontMatter).run();
+        App.updateTimeDisplays();
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+        mermaid.init();
+        Promise.resolve();
+    }
+}
+
+class EvalBlock {
+    constructor(codeEl, frontMatter) {
+        this.codeEl = codeEl;
+        this.codeBox = codeEl.closest('.pre-code-box');
+        this.contentBox = codeEl.closest('.content');
+        this.frontMatter = frontMatter;
+        this.config = null;
+        this.fn = new Function(codeEl.innerText);
+    }
+
+    run() {
+        const match = this.codeEl.innerText.split('\n')[0].match(/\/\/\s*@(.+)$/);
+        if (!match)
+            return;
+        this.config = JSON.parse(match[1]);
+        if (this.config.eval) {
+            this.fn();
+            this.codeEl.parentElement.classList.add('evaluated');
         }
     }
 
-    static contextHide(opts) {
+    hide(opts) {
         opts = opts || {};
         const p = document.createElement('p');
         p.innerHTML = '<button>' + (opts.text || 'Show Code') + '</button>';
         p.firstElementChild.addEventListener('click', () => {
             p.remove();
-            this.preEl.style.display = '';
+            this.codeBox.style.display = '';
         });
-        const box = this.preEl.closest('.pre-code-box') || this.preEl;
-        box.insertAdjacentElement('afterend', p);
-        box.style.display = 'none';
+        this.codeBox.insertAdjacentElement('afterend', p);
+        this.codeBox.style.display = 'none';
     }
 }
 
 class LoadingOSD {
-    static getBox() {
-        if (!this._box) {
+    static get box() {
+        if (!LoadingOSD._box) {
             document.body.insertAdjacentHTML('beforeend', '<div class=loading-box>Loading&hellip;</div>');
-            this._box = document.body.lastElementChild;
+            LoadingOSD._box = document.body.lastElementChild;
         }
-        return this._box;
+        return LoadingOSD._box;
     }
 
     static show() {
-        this.getBox().classList.remove('hide');
+        LoadingOSD.box.classList.remove('hide');
     }
 
     static hide() {
-        this.getBox().classList.add('hide');
+        LoadingOSD.box.classList.add('hide');
     }
 }
 
 class FancyTable {
     constructor(tableEl) {
         this.tableEl = tableEl;
+        this.sorterRow = tableEl.tHead.firstElementChild;
         this.rows = Array.from(this.tableEl.tBodies[0].getElementsByTagName('tr'));
         this.sorts = [];
         this.boundRowCompareFn = this.rowCompareFn.bind(this);
@@ -552,7 +641,8 @@ class FancyTable {
 
     apply() {
         this.tableEl.classList.add('fancy');
-        this.tableEl.addEventListener('click', this.onClick.bind(this));
+        this.sorterRow.classList.add('sorter');
+        this.sorterRow.addEventListener('click', this.onClick.bind(this));
     }
 
     onClick(event) {
@@ -627,7 +717,6 @@ class App {
     static onHashChange(event) {
         if (event)
             event.preventDefault();
-        LoadingOSD.show();
 
         let page = location.hash.substr(1), jump = null;
         if (page.indexOf('#') >= 0)
@@ -635,30 +724,7 @@ class App {
         if (!page || page.endsWith('/'))
             page += 'index.md';
 
-        if (page === mainEl.dataset.page) {
-            (jump ? mainEl.querySelector('#' + jump) : mainEl.firstElementChild).scrollIntoView();
-            LoadingOSD.hide();
-            return;
-        }
-
-        mainEl.dataset.page = '';
-
-        Loader.load(page, mainEl)
-            .then(() => {
-                if (jump)
-                    mainEl.querySelector('#' + jump).scrollIntoView();
-                mainEl.dataset.page = page;
-                App.outlineFinder.dex.splice(0, App.outlineFinder.dex.length);
-                for (const header of mainEl.querySelectorAll('h1, h2, h3, h4')) {
-                    App.outlineFinder.dex.push({
-                        text: header.querySelector('span').innerText,
-                        hash: header.querySelector('a').getAttribute('href').substr(1),
-                    });
-                }
-                App.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
-                App.outlineFinder.applyFilter();
-            })
-            .finally(LoadingOSD.hide.bind(LoadingOSD));
+        App.mainPage.load(page, jump);
     }
 
     static onKeyDown(event) {
@@ -678,9 +744,7 @@ class App {
                 App.outlineFinder.show();
 
             } else if (event.key === 'r') {
-                // FIXME: Think of a better API to reload the page.
-                mainEl.dataset.page = '';
-                App.onHashChange();
+                App.mainPage.reload();
 
             } else if (event.key === '?') {
                 document.getElementById('helpBox').classList.remove('hide');
@@ -725,6 +789,8 @@ class App {
     }
 
     static main() {
+        App.mainPage = new PageDisplay(document.getElementById('main'));
+
         App.pageFinder = new Finder('Find page');
         App.pageFinder.load('pages.txt');
 
@@ -747,13 +813,12 @@ function boot() {
     document.head.appendChild(el);
 
     // Load library scripts needed.
-    const scriptPromises = [];
-    script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/excel.min.js',
-        script('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js'));
-    script('https://unpkg.com/marked/marked.min.js');
-    script('https://unpkg.com/showdown/dist/showdown.min.js');
-    script('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js');
-    script('https://unpkg.com/mermaid/dist/mermaid.min.js');
+    const scriptsPromise = Promise.all([
+        'https://unpkg.com/showdown/dist/showdown.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js',
+        'https://unpkg.com/mermaid/dist/mermaid.min.js',
+    ].map(script));
 
     document.body.insertAdjacentHTML('afterbegin', `
         <article id=main></article>
@@ -781,25 +846,15 @@ function boot() {
         }
     }
 
-    window.mainEl = document.getElementById('main');
+    scriptsPromise.then(App.main);
+}
 
-    Promise.all(scriptPromises).then(App.main);
-
-    function script(url, after) {
-        const el = document.createElement('script');
-        el.setAttribute('async', 'async');
-        el.src = url;
-
-        if (after)
-            after.then(() => document.head.appendChild(el));
-        else
-            document.head.appendChild(el);
-
-        const promise = new Promise((resolve, reject) => {
-            el.onload = () => resolve();
-        });
-
-        scriptPromises.push(promise);
-        return promise;
-    }
+function script(url) {
+    const el = document.createElement('script');
+    el.setAttribute('async', 'async');
+    el.src = url;
+    document.head.appendChild(el);
+    return new Promise((resolve/*, reject*/) => {
+        el.onload = resolve;
+    });
 }

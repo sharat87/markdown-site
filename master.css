@@ -48,7 +48,7 @@ hr {
     padding: 3px 2em;
 }
 
-article > h1:first-child {
+.content > h1:first-child {
     margin-top: 0;
     font-size: 2em;
 }
@@ -89,8 +89,12 @@ th {
     text-align: left;
 }
 
-table.fancy th {
+table.fancy .sorter {
     cursor: pointer;
+}
+
+table.fancy .column-selector th {
+    cursor: copy;
 }
 
 table.fancy .sort-marker {
@@ -216,6 +220,11 @@ h1 + .page-desc {
     background-color: yellow;
 }
 
+.page .content:empty:before {
+    content: 'Loading...';
+    font-style: italic;
+}
+
 .page-end {
     border-top: 1px solid rgba(0, 0, 0, .2);
     color: rgba(0, 0, 0, .2);
@@ -293,6 +302,14 @@ h1:hover .link, h2:hover .link, h3:hover .link, h4:hover .link {
 
 .overlay :last-child {
     margin-bottom: 0;
+}
+
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item .check {
+    cursor: default;
 }
 
 @media print {
