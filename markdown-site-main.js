@@ -28,15 +28,13 @@ class Compiler {
             requireSpaceBeforeHeadingText: true,
         });
 
-        const html = converter.makeHtml(raw);
-
         const box = document.createElement('div');
-        box.innerHTML = html;
-        return Compiler.postProcess(converter, box);
+        box.innerHTML = converter.makeHtml(raw);
+        return Compiler.postProcess(converter.getMetadata(), box);
     }
 
-    static postProcess(converter, box) {
-        for (const el of box.querySelectorAll('p, td, li')) {
+    static postProcess(metadata, box) {
+        for (const el of box.querySelectorAll('p, td, li, h1, h2, h3, h4, h5, h6')) {
             if (el.tagName === 'P' && el.textContent === '[TOC]') {
                 const toc = document.createElement('ol');
                 toc.classList.add('toc');
@@ -49,10 +47,9 @@ class Compiler {
             }
         }
 
-        const frontMatter = converter.getMetadata();
         for (const codeEl of box.querySelectorAll('pre > code'))
-            Compiler.highlightSyntax(codeEl, frontMatter);
-        box.dataset.meta = JSON.stringify(frontMatter);
+            Compiler.highlightSyntax(codeEl, metadata);
+        box.dataset.meta = JSON.stringify(metadata);
 
         for (const el of box.querySelectorAll('h1, h2, h3, h4'))
             Compiler.addPermanentLinks(el);
@@ -71,7 +68,7 @@ class Compiler {
             if (e.href.endsWith('.md'))
                 e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
 
-        return {frontMatter, box};
+        return {frontMatter: metadata, box};
     }
 
     static highlightSyntax(codeEl, frontMatter) {
