@@ -192,10 +192,12 @@ class Compiler {
             '<->': '\u2194',
             '<-': '\u2190',
             '->': '\u2192',
-            '<=': '\u21D0',
+            '<=': '\u2264',
             '=>': '\u21D2',
             '---': '\u2014',
             '--': '\u2013',
+            '>=': '\u2265',
+            '==': '\u2261',
         };
         for (const node of el.childNodes) {
             if (node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'CODE') {
