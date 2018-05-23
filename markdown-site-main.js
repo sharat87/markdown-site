@@ -811,6 +811,18 @@ function boot() {
     el.text = 'MathJax.Hub.Config(' + JSON.stringify(MATH_JAX_CONFIG) + ')';
     document.head.appendChild(el);
 
+    // Load default stylesheet.
+    for (const script of document.querySelectorAll('script[src]')) {
+        const src = script.getAttribute('src');
+        if (src.endsWith('markdown-site-main.js')) {
+            const link = document.createElement('link');
+            link.setAttribute('rel', 'stylesheet');
+            link.setAttribute('href', src.replace('markdown-site-main.js', 'master.css'));
+            document.head.appendChild(link);
+            break;
+        }
+    }
+
     // Load library scripts needed.
     const scriptsPromise = Promise.all([
         'https://unpkg.com/showdown/dist/showdown.min.js',
@@ -833,17 +845,6 @@ function boot() {
         </div>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
     `);
-
-    for (const script of document.querySelectorAll('script[src]')) {
-        const src = script.getAttribute('src');
-        if (src.endsWith('markdown-site-main.js')) {
-            const link = document.createElement('link');
-            link.setAttribute('rel', 'stylesheet');
-            link.setAttribute('href', src.replace('markdown-site-main.js', 'master.css'));
-            document.head.appendChild(link);
-            break;
-        }
-    }
 
     scriptsPromise.then(App.main);
 }
