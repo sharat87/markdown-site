@@ -20,8 +20,12 @@ input, button, select {
     font: inherit;
 }
 
-button {
+button, summary {
     cursor: pointer;
+}
+
+summary:hover {
+    background-color: rgba(0, 0, 0, .1);
 }
 
 hr {
