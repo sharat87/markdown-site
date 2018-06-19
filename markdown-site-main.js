@@ -68,6 +68,26 @@ class Compiler {
             if (e.href.endsWith('.md'))
                 e.setAttribute('href', location.hash.match(/^#(.*\/)?/)[0] + e.getAttribute('href'));
 
+        let detailsStack = [];
+        for (const el of Array.from(box.children)) {
+            if (el.tagName === 'P' && el.innerText.startsWith('{{{')) {
+                el.firstChild.textContent = el.firstChild.textContent.substr(3).trim();
+                el.insertAdjacentHTML('beforebegin', '<details><summary></summary></details>');
+                const detailsEl = el.previousElementSibling;
+                detailsEl.className = el.className;
+                for (const child of el.childNodes)
+                    detailsEl.firstElementChild.appendChild(child);
+                el.remove();
+                detailsStack.push(detailsEl);
+            } else if (el.tagName === 'P' && el.innerText === '}}}') {
+                el.style.outline = '3px solid blue';
+                detailsStack.pop();
+                el.remove();
+            } else if (detailsStack.length) {
+                detailsStack[detailsStack.length - 1].appendChild(el);
+            }
+        }
+
         return {frontMatter: metadata, box};
     }
 
