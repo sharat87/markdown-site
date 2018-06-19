@@ -314,9 +314,9 @@ class Finder {
         }
     }
 
-    applyFilter() {
+    applyFilter(force) {
         const needle = this.searchInput.value.toLowerCase();
-        if (needle === this.prevNeedle)
+        if (!force && needle === this.prevNeedle)
             return;
 
         this.listing.innerHTML = '<em>Searching&hellip;</em>';
@@ -464,7 +464,7 @@ class PageDisplay {
             });
         }
         App.outlineFinder.dex.sort((a, b) => a.text < b.text ? -1 : (a.text > b.text ? 1 : 0));
-        App.outlineFinder.applyFilter();
+        App.outlineFinder.applyFilter(true);
     }
 
     doLoad(url) {
