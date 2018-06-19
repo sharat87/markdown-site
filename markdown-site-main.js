@@ -211,8 +211,8 @@ class Finder {
     constructor(title) {
         this.el = document.createElement('div');
         this.el.className = 'finder hide';
-        this.el.innerHTML = (title ? `<h2>${title}</h2>` : '') + '<input type="search" placeholder="Type to filter&hellip;">' +
-            ' <div class="listing"></div>';
+        this.el.innerHTML = (title ? `<h2>${title}</h2>` : '') +
+            '<input type="search" placeholder="Type to filter&hellip;"><div class="listing"></div>';
         document.body.appendChild(this.el);
 
         this.dex = [];
@@ -223,7 +223,7 @@ class Finder {
         this.searchInput.addEventListener('keydown', this.onKeyDown.bind(this));
 
         // Detect the `X` button click in the search input.
-        this.searchInput.addEventListener('click', (event) => {
+        this.searchInput.addEventListener('click', (/* event */) => {
             setTimeout(() => {
                 if (this.searchInput.value === '')
                     this.applyFilter();
@@ -470,7 +470,7 @@ class PageDisplay {
     doLoad(url) {
         return fetch(url, {cache: 'no-cache'})
             .then(PageDisplay.onResponse)
-            .then(this.boundShowPage)//.catch(this.onError.bind(this));
+            .then(this.boundShowPage)// FIXME: .catch(this.onError.bind(this));
     }
 
     static onResponse(response) {
@@ -494,7 +494,7 @@ class PageDisplay {
             this.contentEl.innerHTML = '<h1 style="color:red">Error Loading Document<br>' + response.status + ': ' +
                 response.statusText + '</h1>';
         }
-        return Promise.reject();
+        return Promise.reject(response);
     }
 
     showPage([text, headers]) {
@@ -536,7 +536,6 @@ class PageDisplay {
         if (tocEl) {
             tocEl.innerHTML = 'Loading table of contents&hellip;';
             const markup = [];
-            const pagePrefix = location.hash.substr(1).split('#', 1)[0] + '#';
             let headers, minLevel;
 
             if (contentEl.querySelectorAll('h1').length === 1 && contentEl.firstElementChild.tagName === 'H1') {
@@ -575,7 +574,7 @@ class PageDisplay {
         App.updateTimeDisplays();
         MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
         mermaid.init();
-        Promise.resolve();
+        return Promise.resolve(1);
     }
 }
 
