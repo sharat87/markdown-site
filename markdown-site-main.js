@@ -286,6 +286,7 @@ class Finder {
 
     onKeyDown(event) {
         if (event.key === 'Escape') {
+            event.preventDefault();
             if (this.searchInput.value) {
                 this.searchInput.value = '';
                 this.applyFilter();
@@ -295,6 +296,7 @@ class Finder {
             }
 
         } else if (event.key === 'Enter') {
+            event.preventDefault();
             this._activeLink.click();
 
         } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
