@@ -31,3 +31,7 @@ This project uses the following libraries:
 ## Contribute
 
 Please open an issue to discuss any bug of feature suggestion you have. Thank you.
+
+## Alternatives
+
+1. [mdwiki](https://github.com/Dynalon/mdwiki).
